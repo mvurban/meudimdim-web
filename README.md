@@ -1,8 +1,8 @@
-# FinTrack — Instruções do Projeto
+# PatrimonioMesaMes — Instruções do Projeto
 
 ## Objetivo
 
-O FinTrack é um sistema web de controle financeiro pessoal. Seu propósito é permitir que o usuário registre e acompanhe a evolução do seu patrimônio ao longo do tempo, produto a produto, mês a mês.
+O PatrimonioMesaMes é um sistema web de controle financeiro pessoal. Seu propósito é permitir que o usuário registre e acompanhe a evolução do seu patrimônio ao longo do tempo, produto a produto, mês a mês.
 
 O sistema é baseado no conceito de **snapshots mensais**: o usuário registra manualmente o estado de cada produto ao final de cada mês (aporte, retirada, rentabilidade e valor final). Todo o restante — consolidados, gráficos, visões por instituição, por categoria, por região — é derivado desses lançamentos. Não há integração automática com bancos ou corretoras, exceto na área de Ações, que busca cotações via Yahoo Finance.
 
@@ -501,7 +501,7 @@ fintrack/
 
 | Fase | Conteúdo |
 |---|---|
-| 1 | Docker + docker-compose + .devcontainer + estrutura monorepo (api/ + web/) |
+| 1 | Docker + docker-compose + .devcontainer + estrutura de dois repositórios (api/ e web/) |
 | 2 | API: Prisma schema completo + conexão PostgreSQL + seed de dados de exemplo |
 | 3 | API: Autenticação — validação de token Google + registro automático de usuário |
 | 4 | API: CRUD de tabelas de referência (categorias, classes, instituições) |
