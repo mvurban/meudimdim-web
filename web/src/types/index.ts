@@ -84,6 +84,7 @@ export interface Product {
   liquidity: Liquidity
   status: ProductStatus
   createdAt: string
+  details?: string
   // computed from latest entry
   currentValue?: number
   currentValueBrl?: number

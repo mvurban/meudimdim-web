@@ -90,6 +90,7 @@ export const mockProducts: Product[] = [
     liquidity: { value: 1, unit: 'days' },
     status: 'active',
     createdAt: '2024-01-01',
+    details: '110% CDI · D+1',
     currentValue: 85400,
     currentValueBrl: 85400,
     currentValueUsd: 14654,
@@ -105,6 +106,7 @@ export const mockProducts: Product[] = [
     liquidity: { value: 4, unit: 'years' },
     status: 'active',
     createdAt: '2024-03-01',
+    details: 'IPCA + 5,6% · 05/2029',
     currentValue: 62300,
     currentValueBrl: 62300,
     currentValueUsd: 10688,
@@ -120,6 +122,7 @@ export const mockProducts: Product[] = [
     liquidity: { value: 30, unit: 'days' },
     status: 'active',
     createdAt: '2023-06-01',
+    details: 'Resgate em 30 dias corridos',
     currentValue: 43200,
     currentValueBrl: 43200,
     currentValueUsd: 7408,
@@ -135,6 +138,7 @@ export const mockProducts: Product[] = [
     liquidity: { value: 2, unit: 'days' },
     status: 'active',
     createdAt: '2023-01-01',
+    details: 'Carteira diversificada BR',
     currentValue: 78500,
     currentValueBrl: 78500,
     currentValueUsd: 13470,
@@ -151,6 +155,7 @@ export const mockProducts: Product[] = [
     liquidity: { value: 2, unit: 'days' },
     status: 'active',
     createdAt: '2023-09-01',
+    details: 'Vanguard Real Estate ETF · EUA',
     currentValue: 12500,
     currentValueBrl: 72875,
     currentValueUsd: 12500,
@@ -166,6 +171,7 @@ export const mockProducts: Product[] = [
     liquidity: { value: 2, unit: 'days' },
     status: 'active',
     createdAt: '2024-02-01',
+    details: 'FII Logística · D+2',
     currentValue: 55200,
     currentValueBrl: 55200,
     currentValueUsd: 9469,
@@ -176,6 +182,7 @@ export const mockProducts: Product[] = [
 // PRODUCT ENTRIES (last 3 months for p1)
 // ─────────────────────────────────────────────
 export const mockEntries: ProductEntry[] = [
+  // p1 — CDB XP 110% CDI
   {
     id: 'e1', productId: 'p1', month: 1, year: 2026,
     contribution: 1000, withdrawal: 0, returnPct: 0.91,
@@ -193,6 +200,41 @@ export const mockEntries: ProductEntry[] = [
     contribution: 500, withdrawal: 0, returnPct: 0.89,
     income: 766, valueOriginal: 87409, valueBrl: 87409, valueUsd: 14994,
     valueFinal: 87409, exchangeRate: 5.83, createdAt: '2026-03-31',
+  },
+  // p2 — Tesouro IPCA+ 2029
+  {
+    id: 'e4', productId: 'p2', month: 3, year: 2026,
+    contribution: 0, withdrawal: 0, returnPct: 1.15,
+    income: 716, valueOriginal: 62300, valueBrl: 62300, valueUsd: 10688,
+    valueFinal: 62300, exchangeRate: 5.83, createdAt: '2026-03-31',
+  },
+  // p3 — Fundo Multimercado XP
+  {
+    id: 'e5', productId: 'p3', month: 3, year: 2026,
+    contribution: 2000, withdrawal: 0, returnPct: 0.72,
+    income: 311, valueOriginal: 43200, valueBrl: 43200, valueUsd: 7408,
+    valueFinal: 43200, exchangeRate: 5.83, createdAt: '2026-03-31',
+  },
+  // p4 — Ações Clear
+  {
+    id: 'e6', productId: 'p4', month: 3, year: 2026,
+    contribution: 0, withdrawal: 0, returnPct: 2.30,
+    income: 1806, valueOriginal: 78500, valueBrl: 78500, valueUsd: 13470,
+    valueFinal: 78500, exchangeRate: 5.83, createdAt: '2026-03-31',
+  },
+  // p5 — VNQ Real Estate ETF
+  {
+    id: 'e7', productId: 'p5', month: 3, year: 2026,
+    contribution: 1000, withdrawal: 0, returnPct: 1.45,
+    income: 1057, valueOriginal: 12500, valueBrl: 72875, valueUsd: 12500,
+    valueFinal: 72875, exchangeRate: 5.83, createdAt: '2026-03-31',
+  },
+  // p6 — HGLG11 FII Logística
+  {
+    id: 'e8', productId: 'p6', month: 3, year: 2026,
+    contribution: 0, withdrawal: 0, returnPct: 1.59,
+    income: 877, valueOriginal: 55200, valueBrl: 55200, valueUsd: 9469,
+    valueFinal: 55200, exchangeRate: 5.83, createdAt: '2026-03-31',
   },
 ]
 
