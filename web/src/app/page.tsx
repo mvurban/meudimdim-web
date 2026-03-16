@@ -1,5 +1,6 @@
 'use client'
 
+import { signIn } from 'next-auth/react'
 import { useTheme } from '@/lib/theme-context'
 
 const FEATURES = [
@@ -231,6 +232,7 @@ export default function LoginPage() {
 
           {/* Google button */}
           <button
+            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
             className="flex w-full items-center justify-center gap-3 transition-all"
             style={{
               padding: '13px 20px',
