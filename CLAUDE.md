@@ -30,7 +30,7 @@ docker-compose -f docker/docker-compose.yml up
 - All reference tables (Categories, AssetClasses, Institutions) are **per-user**, never global
 
 ### Auth flow
-NextAuth v5 with Google OAuth. On first login, the frontend calls `POST /auth/register` on the API to auto-register the user.
+NextAuth latest stable with Google OAuth. On first login, the frontend calls `POST /auth/register` on the API to auto-register the user.
 
 ## Tech Stack
 

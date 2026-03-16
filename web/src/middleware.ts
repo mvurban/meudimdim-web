@@ -10,7 +10,14 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ req, token }) => {
-        if (req.nextUrl.pathname.startsWith("/dashboard")) {
+        const { pathname } = req.nextUrl;
+        const protectedPrefixes = [
+          "/dashboard",
+          "/configuracoes",
+          "/produtos",
+          "/acoes",
+        ];
+        if (protectedPrefixes.some(p => pathname.startsWith(p))) {
           return !!token;
         }
         return true;
@@ -20,5 +27,11 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*"],
+  matcher: [
+    "/",
+    "/dashboard/:path*",
+    "/configuracoes/:path*",
+    "/produtos/:path*",
+    "/acoes/:path*",
+  ],
 };

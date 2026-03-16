@@ -1,12 +1,9 @@
-"use client";
-
-import { signOut } from "next-auth/react";
+import { AppShell } from '@/components/layout/AppShell'
 
 export default function DashboardPage() {
   return (
-    <main>
+    <AppShell>
       <h1>Dashboard</h1>
-      <button onClick={() => signOut({ callbackUrl: "/" })}>Sair</button>
-    </main>
-  );
+    </AppShell>
+  )
 }

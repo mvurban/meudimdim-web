@@ -2,26 +2,51 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { ThemeToggle } from './ThemeToggle'
-import { mockUser } from '@/lib/mock-data'
 
 const NAV = [
-  { href: '/app/dashboard',    icon: '▣', label: 'Dashboard'    },
-  { href: '/app/produtos',     icon: '◈', label: 'Produtos'     },
-  { href: '/app/acoes',        icon: '◉', label: 'Ações'        },
-  { href: '/app/instituicoes', icon: '◎', label: 'Instituições' },
-  { href: '/app/cotacoes',     icon: '◐', label: 'Cotações'     },
+  { href: '/dashboard', icon: '▣', label: 'Dashboard' },
+  { href: '/produtos',  icon: '◈', label: 'Produtos'  },
+  { href: '/acoes',     icon: '◉', label: 'Ações'     },
 ]
 
-const ADMIN_NAV = [
-  { href: '/app/admin', icon: '⊞', label: 'Configurações' },
+const CONFIG_NAV = [
+  { href: '/configuracoes/categorias',   icon: '◧', label: 'Categorias'      },
+  { href: '/configuracoes/classes',      icon: '◫', label: 'Classes de Ativo' },
+  { href: '/configuracoes/instituicoes', icon: '◩', label: 'Instituições'     },
+  { href: '/configuracoes/cotacoes',     icon: '◐', label: 'Cotações'         },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const [expanded, setExpanded] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('sidebar-config-expanded')
+      if (stored !== null) return stored === 'true'
+    }
+    return pathname.startsWith('/configuracoes')
+  })
+
+  useEffect(() => {
+    if (pathname.startsWith('/configuracoes')) {
+      setExpanded(true)
+      sessionStorage.setItem('sidebar-config-expanded', 'true')
+    }
+  }, [pathname])
+
+  function toggleExpanded() {
+    setExpanded(v => {
+      const next = !v
+      sessionStorage.setItem('sidebar-config-expanded', String(next))
+      return next
+    })
+  }
 
   function active(href: string) {
-    return pathname.startsWith(href)
+    return pathname === href || pathname.startsWith(href + '/')
   }
 
   function navStyle(href: string): React.CSSProperties {
@@ -39,6 +64,11 @@ export function Sidebar() {
       transition: 'all 0.15s',
     }
   }
+
+  const userName = session?.user?.name ?? ''
+  const userEmail = session?.user?.email ?? ''
+  const userImage = session?.user?.image ?? null
+  const initials = userName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
   return (
     <aside
@@ -90,27 +120,63 @@ export function Sidebar() {
 
         <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', padding: '0 8px', marginBottom: 6 }}>Sistema</p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {ADMIN_NAV.map(item => (
-            <li key={item.href}>
-              <Link href={item.href} style={navStyle(item.href)}>
-                <span style={{ width: 3, height: 16, borderRadius: 99, flexShrink: 0, background: active(item.href) ? '#22c55e' : 'transparent' }} />
-                <span style={{ fontSize: 12, opacity: 0.75 }}>{item.icon}</span>
-                {item.label}
-              </Link>
-            </li>
-          ))}
+          {/* Configurações — expandable */}
+          <li>
+            <button
+              onClick={toggleExpanded}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                borderRadius: 8,
+                padding: '9px 10px',
+                fontSize: 13.5,
+                fontWeight: expanded ? 500 : 400,
+                color: expanded ? '#fff' : 'rgba(255,255,255,0.5)',
+                background: expanded ? 'rgba(34,197,94,0.08)' : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <span style={{ width: 3, height: 16, borderRadius: 99, flexShrink: 0, background: expanded ? '#22c55e' : 'transparent' }} />
+              <span style={{ fontSize: 12, opacity: 0.75 }}>⊞</span>
+              <span style={{ flex: 1, textAlign: 'left' }}>Configurações</span>
+              <span style={{ fontSize: 10, transition: 'transform 0.2s', display: 'inline-block', transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
+            </button>
+
+            {expanded && (
+              <ul style={{ listStyle: 'none', padding: '2px 0 2px 22px', margin: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {CONFIG_NAV.map(item => (
+                  <li key={item.href}>
+                    <Link href={item.href} style={{ ...navStyle(item.href), fontSize: 13 }}>
+                      <span style={{ width: 3, height: 14, borderRadius: 99, flexShrink: 0, background: active(item.href) ? '#22c55e' : 'transparent' }} />
+                      <span style={{ fontSize: 11, opacity: 0.75, color: active(item.href) ? '#22c55e' : 'inherit' }}>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
         </ul>
       </nav>
 
       {/* User footer */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#22c55e', flexShrink: 0 }}>
-            {mockUser.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-          </div>
+          {userImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={userImage} alt={userName} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#22c55e', flexShrink: 0 }}>
+              {initials}
+            </div>
+          )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mockUser.name}</p>
-            <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mockUser.email}</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</p>
+            <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</p>
           </div>
           <ThemeToggle />
         </div>

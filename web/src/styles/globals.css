@@ -18,6 +18,7 @@
   --bg-surface:     #ffffff;
   --bg-elevated:    #f1f5f9;
   --bg-overlay:     rgba(0, 0, 0, 0.04);
+  --bg-card:        #ffffff;
 
   --text-primary:   #0f172a;
   --text-secondary: #475569;
@@ -60,6 +61,7 @@
   --bg-surface:     #111111;
   --bg-elevated:    #1a1a1a;
   --bg-overlay:     rgba(255, 255, 255, 0.03);
+  --bg-card:        #161616;
 
   --text-primary:   #f8fafc;
   --text-secondary: #94a3b8;
@@ -144,9 +146,9 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
 }
 .badge-green  { background: var(--brand-subtle); color: var(--brand); }
-.badge-red    { background: rgba(239,68,68,0.1);  color: #ef4444; }
-.badge-yellow { background: rgba(245,158,11,0.1); color: #f59e0b; }
-.badge-blue   { background: rgba(59,130,246,0.1); color: #3b82f6; }
+.badge-red    { background: rgba(239,68,68,0.1);  color: var(--danger); }
+.badge-yellow { background: rgba(245,158,11,0.1); color: var(--warning); }
+.badge-blue   { background: rgba(59,130,246,0.1); color: var(--info); }
 .badge-gray   { background: var(--bg-elevated);   color: var(--text-secondary); }
 
 .btn-brand {
@@ -253,8 +255,8 @@ h1, h2, h3, h4, h5, h6 {
 .text-brand { color: var(--brand); }
 .text-muted  { color: var(--text-muted); }
 .text-sub    { color: var(--text-secondary); }
-.value-pos   { color: #22c55e; }
-.value-neg   { color: #ef4444; }
+.value-pos   { color: var(--success); }
+.value-neg   { color: var(--danger); }
 .value-neu   { color: var(--text-muted); }
 
 .pill-filter {
