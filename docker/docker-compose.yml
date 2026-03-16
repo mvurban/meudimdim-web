@@ -4,12 +4,21 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.dev
     container_name: meudimdim_web
+    env_file:
+      - ../web/.env
     volumes:
       - ..:/app
       - /app/web/node_modules
+      - claude_data:/root/.claude 
+      - claude_config:/root/.config
     working_dir: /app/web
     command: sleep infinity
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
+      - NODE_ENV=development
+      - SHELL=/bin/bash
+volumes:
+  claude_data: 
+  claude_config:
+  

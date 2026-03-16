@@ -23,28 +23,6 @@ docker-compose -f docker/docker-compose.yml up
 
 ## Architecture
 
-### Frontend structure
-```
-src/
-├── app/
-│   ├── (auth)/login/       ← Google OAuth login
-│   └── (app)/              ← protected routes
-│       ├── dashboard/
-│       ├── produtos/
-│       ├── acoes/
-│       ├── instituicoes/
-│       ├── cotacoes/
-│       └── admin/
-├── components/
-│   ├── ui/                 ← shadcn/ui
-│   ├── charts/             ← Recharts wrappers
-│   ├── products/
-│   ├── stocks/
-│   └── layout/
-└── lib/
-    ├── api.ts              ← single HTTP client for all API calls
-    └── auth.ts             ← NextAuth v5 config
-```
 
 ### Key constraints
 - **No direct DB access** — all data comes from the API

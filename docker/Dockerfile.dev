@@ -1,6 +1,10 @@
 FROM node:20-alpine
 
-RUN apk add --no-cache libc6-compat git
+# Adicionamos bash e coreutils (necessários para o Claude CLI e comandos como tail)
+RUN apk add --no-cache libc6-compat git bash coreutils
+
+# Definimos a variável SHELL que o Claude CLI procura
+ENV SHELL=/bin/bash
 
 WORKDIR /app
 
