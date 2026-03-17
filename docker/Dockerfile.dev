@@ -6,6 +6,12 @@ RUN apk add --no-cache libc6-compat git bash coreutils
 # Definimos a variável SHELL que o Claude CLI procura
 ENV SHELL=/bin/bash
 
+WORKDIR /app/web
+
+# Instala dependências na imagem para não depender de node_modules do host
+COPY web/package*.json ./
+RUN npm install
+
 WORKDIR /app
 
 EXPOSE 3000
