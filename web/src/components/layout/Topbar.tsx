@@ -3,12 +3,15 @@
 import { usePathname } from 'next/navigation'
 
 const LABELS: Record<string, string> = {
-  dashboard:    'Dashboard',
-  produtos:     'Produtos',
-  acoes:        'Ações',
-  instituicoes: 'Visão por Instituição',
-  cotacoes:     'Cotações de Câmbio',
-  admin:        'Configurações',
+  dashboard:      'Dashboard',
+  produtos:       'Produtos',
+  acoes:          'Ações',
+  instituicoes:   'Visão por Instituição',
+  cotacoes:       'Cotações de Câmbio',
+  admin:          'Configurações',
+  categorias:     'Categorias',
+  classes:        'Classes de Ativo',
+  'excluir-conta':'Excluir conta',
 }
 
 interface TopbarProps {

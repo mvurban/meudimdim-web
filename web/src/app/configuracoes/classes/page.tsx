@@ -1,19 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { mockAssetClasses, mockCategories } from '@/lib/mock-data'
+import { getAssetClasses, setAssetClasses, getCategories } from '@/lib/mock-store'
 import type { AssetClass, Category } from '@/types'
 
 type FormState = { name: string; categoryId: string }
 const EMPTY: FormState = { name: '', categoryId: '' }
 
 export default function ClassesPage() {
-  const [items, setItems] = useState<AssetClass[]>(mockAssetClasses)
-  const [categories] = useState<Category[]>(mockCategories)
+  const { data: session } = useSession()
+  const [items, setItemsState] = useState<AssetClass[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
+
+  const email = session?.user?.email ?? null
+
+  useEffect(() => {
+    if (email) {
+      setItemsState(getAssetClasses(email))
+      setCategories(getCategories(email))
+    }
+  }, [email])
+
+  function setItems(updater: AssetClass[] | ((prev: AssetClass[]) => AssetClass[])) {
+    setItemsState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (email) setAssetClasses(email, next)
+      return next
+    })
+  }
 
   function getCategoryName(id: string) {
     return categories.find(c => c.id === id)?.name ?? '—'

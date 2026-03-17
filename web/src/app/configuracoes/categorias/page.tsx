@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { mockCategories } from '@/lib/mock-data'
+import { getCategories, setCategories } from '@/lib/mock-store'
 import type { Category, CategoryName } from '@/types'
 
 const FIXED_IDS = ['cat1', 'cat2', 'cat3', 'cat4', 'cat5']
@@ -11,10 +12,25 @@ type FormState = { name: string; color: string }
 const EMPTY: FormState = { name: '', color: '#22c55e' }
 
 export default function CategoriasPage() {
-  const [items, setItems] = useState<Category[]>(mockCategories)
+  const { data: session } = useSession()
+  const [items, setItemsState] = useState<Category[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
+
+  const email = session?.user?.email ?? null
+
+  useEffect(() => {
+    if (email) setItemsState(getCategories(email))
+  }, [email])
+
+  function setItems(updater: Category[] | ((prev: Category[]) => Category[])) {
+    setItemsState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (email) setCategories(email, next)
+      return next
+    })
+  }
 
   function startAdd() {
     setEditing(null)

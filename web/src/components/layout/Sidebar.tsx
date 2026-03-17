@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { ThemeToggle } from './ThemeToggle'
+import { initUserData } from '@/lib/mock-store'
 
 const NAV = [
   { href: '/dashboard', icon: '▣', label: 'Dashboard' },
@@ -13,10 +14,11 @@ const NAV = [
 ]
 
 const CONFIG_NAV = [
-  { href: '/configuracoes/categorias',   icon: '◧', label: 'Categorias'      },
-  { href: '/configuracoes/classes',      icon: '◫', label: 'Classes de Ativo' },
-  { href: '/configuracoes/instituicoes', icon: '◩', label: 'Instituições'     },
-  { href: '/configuracoes/cotacoes',     icon: '◐', label: 'Cotações'         },
+  { href: '/configuracoes/categorias',    icon: '◧', label: 'Categorias',      danger: false },
+  { href: '/configuracoes/classes',       icon: '◫', label: 'Classes de Ativo', danger: false },
+  { href: '/configuracoes/instituicoes',  icon: '◩', label: 'Instituições',     danger: false },
+  { href: '/configuracoes/cotacoes',      icon: '◐', label: 'Cotações',         danger: false },
+  { href: '/configuracoes/excluir-conta', icon: '⊗', label: 'Excluir conta',    danger: true  },
 ]
 
 export function Sidebar() {
@@ -36,6 +38,11 @@ export function Sidebar() {
       sessionStorage.setItem('sidebar-config-expanded', 'true')
     }
   }, [pathname])
+
+  useEffect(() => {
+    const email = session?.user?.email
+    if (email) initUserData(email)
+  }, [session])
 
   function toggleExpanded() {
     setExpanded(v => {
@@ -148,15 +155,28 @@ export function Sidebar() {
 
             {expanded && (
               <ul style={{ listStyle: 'none', padding: '2px 0 2px 22px', margin: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {CONFIG_NAV.map(item => (
-                  <li key={item.href}>
-                    <Link href={item.href} style={{ ...navStyle(item.href), fontSize: 13 }}>
-                      <span style={{ width: 3, height: 14, borderRadius: 99, flexShrink: 0, background: active(item.href) ? '#22c55e' : 'transparent' }} />
-                      <span style={{ fontSize: 11, opacity: 0.75, color: active(item.href) ? '#22c55e' : 'inherit' }}>{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
+                {CONFIG_NAV.map(item => {
+                  const accentColor = item.danger ? '#ef4444' : '#22c55e'
+                  const isActive = active(item.href)
+                  return (
+                    <li key={item.href}>
+                      <Link href={item.href} style={{
+                        ...navStyle(item.href),
+                        fontSize: 13,
+                        color: item.danger
+                          ? (isActive ? '#ef4444' : 'rgba(239,68,68,0.6)')
+                          : (isActive ? '#fff' : 'rgba(255,255,255,0.5)'),
+                        background: isActive
+                          ? (item.danger ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.12)')
+                          : 'transparent',
+                      }}>
+                        <span style={{ width: 3, height: 14, borderRadius: 99, flexShrink: 0, background: isActive ? accentColor : 'transparent' }} />
+                        <span style={{ fontSize: 11, opacity: 0.75, color: isActive ? accentColor : 'inherit' }}>{item.icon}</span>
+                        {item.label}
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </li>

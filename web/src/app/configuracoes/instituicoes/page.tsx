@@ -1,15 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { mockInstitutions } from '@/lib/mock-data'
+import { getInstitutions, setInstitutions } from '@/lib/mock-store'
 import type { Institution } from '@/types'
 
 export default function InstituicoesConfigPage() {
-  const [items, setItems] = useState<Institution[]>(mockInstitutions)
+  const { data: session } = useSession()
+  const [items, setItemsState] = useState<Institution[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
+
+  const email = session?.user?.email ?? null
+
+  useEffect(() => {
+    if (email) setItemsState(getInstitutions(email))
+  }, [email])
+
+  function setItems(updater: Institution[] | ((prev: Institution[]) => Institution[])) {
+    setItemsState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (email) setInstitutions(email, next)
+      return next
+    })
+  }
 
   function startAdd() {
     setEditing(null)
