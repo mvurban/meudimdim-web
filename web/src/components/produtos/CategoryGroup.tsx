@@ -9,6 +9,7 @@ interface CategoryGroupProps {
   assetClasses: AssetClass[]
   institutions: Institution[]
   onEdit: (productId: string) => void
+  onDetail: (productId: string) => void
 }
 
 export function CategoryGroup({
@@ -18,6 +19,7 @@ export function CategoryGroup({
   assetClasses,
   institutions,
   onEdit,
+  onDetail,
 }: CategoryGroupProps) {
   const totalBrl          = entries.reduce((s, e) => s + e.valueBrl, 0)
   const totalUsd          = entries.reduce((s, e) => s + e.valueUsd, 0)
@@ -140,6 +142,7 @@ export function CategoryGroup({
                   assetClass={assetClass}
                   institution={institution}
                   onEdit={() => onEdit(product.id)}
+                  onDetail={() => onDetail(product.id)}
                 />
               )
             })}

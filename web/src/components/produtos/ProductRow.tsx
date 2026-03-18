@@ -13,9 +13,10 @@ interface ProductRowProps {
   assetClass: AssetClass
   institution: Institution
   onEdit: () => void
+  onDetail: () => void
 }
 
-export function ProductRow({ entry, product, assetClass, institution, onEdit }: ProductRowProps) {
+export function ProductRow({ entry, product, assetClass, institution, onEdit, onDetail }: ProductRowProps) {
   return (
     <tr>
       {/* Institution avatar */}
@@ -31,8 +32,16 @@ export function ProductRow({ entry, product, assetClass, institution, onEdit }: 
 
       {/* Product name + class + details */}
       <td>
-        <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {product.name}
+        <div>
+          <button
+            onClick={onDetail}
+            className="font-semibold text-left transition-colors"
+            style={{ color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--brand)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)' }}
+          >
+            {product.name}
+          </button>
           <span
             className="badge badge-gray ml-2"
             style={{ fontSize: '11px', padding: '1px 8px', verticalAlign: 'middle' }}

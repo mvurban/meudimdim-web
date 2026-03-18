@@ -1,5 +1,5 @@
 import type {
-  User, Category, AssetClass, Institution,
+  User, Category, AssetClass, Institution, Region,
   ExchangeRate, Product, ProductEntry, Dividend,
   StockTicker, DashboardData, InstitutionView,
 } from '@/types'
@@ -55,6 +55,17 @@ export const mockInstitutions: Institution[] = [
 ]
 
 // ─────────────────────────────────────────────
+// REGIONS
+// ─────────────────────────────────────────────
+export const mockRegions: Region[] = [
+  { id: 'r1', name: 'Brasil',   isDefault: true  },
+  { id: 'r2', name: 'EUA',      isDefault: false },
+  { id: 'r3', name: 'Europa',   isDefault: false },
+  { id: 'r4', name: 'China',    isDefault: false },
+  { id: 'r5', name: 'Pacífico', isDefault: false },
+]
+
+// ─────────────────────────────────────────────
 // EXCHANGE RATES
 // ─────────────────────────────────────────────
 export const mockExchangeRates: ExchangeRate[] = [
@@ -85,7 +96,7 @@ export const mockProducts: Product[] = [
     categoryId: 'cat1',
     assetClassId: 'ac1',
     institutionId: 'i1',
-    region: 'Brasil',
+    regionId: 'r1',
     currency: 'BRL',
     liquidity: { value: 1, unit: 'days' },
     status: 'active',
@@ -101,7 +112,7 @@ export const mockProducts: Product[] = [
     categoryId: 'cat1',
     assetClassId: 'ac2',
     institutionId: 'i5',
-    region: 'Brasil',
+    regionId: 'r1',
     currency: 'BRL',
     liquidity: { value: 4, unit: 'years' },
     status: 'active',
@@ -117,7 +128,7 @@ export const mockProducts: Product[] = [
     categoryId: 'cat2',
     assetClassId: 'ac5',
     institutionId: 'i1',
-    region: 'Brasil',
+    regionId: 'r1',
     currency: 'BRL',
     liquidity: { value: 30, unit: 'days' },
     status: 'active',
@@ -133,7 +144,7 @@ export const mockProducts: Product[] = [
     categoryId: 'cat3',
     assetClassId: 'ac6',
     institutionId: 'i2',
-    region: 'Brasil',
+    regionId: 'r1',
     currency: 'BRL',
     liquidity: { value: 2, unit: 'days' },
     status: 'active',
@@ -149,7 +160,7 @@ export const mockProducts: Product[] = [
     categoryId: 'cat4',
     assetClassId: 'ac9',
     institutionId: 'i4',
-    region: 'Internacional',
+    regionId: 'r2',
     country: 'EUA',
     currency: 'USD',
     liquidity: { value: 2, unit: 'days' },
@@ -166,7 +177,7 @@ export const mockProducts: Product[] = [
     categoryId: 'cat3',
     assetClassId: 'ac7',
     institutionId: 'i1',
-    region: 'Brasil',
+    regionId: 'r1',
     currency: 'BRL',
     liquidity: { value: 2, unit: 'days' },
     status: 'active',

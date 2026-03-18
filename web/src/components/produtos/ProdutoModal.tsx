@@ -1,21 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { Product, ProductEntry, Category, AssetClass, Institution } from '@/types'
+import type { Product, ProductEntry, Category, AssetClass, Institution, Region } from '@/types'
 import { MONTHS } from '@/lib/utils'
 
 export interface ProdutoFormData {
   name: string
+  cnpj: string
   categoryId: string
   assetClassId: string
   institutionId: string
+  regionId: string
   details: string
   contribution: number
   withdrawal: number
-  valueBrl: number
   valueUsd: number
-  returnPct: number
-  income: number
+  valueBrl: number
 }
 
 interface ProdutoModalProps {
@@ -27,22 +27,23 @@ interface ProdutoModalProps {
   categories: Category[]
   assetClasses: AssetClass[]
   institutions: Institution[]
+  regions: Region[]
   onCancel: () => void
   onSubmit: (data: ProdutoFormData) => void
 }
 
 const EMPTY_FORM: ProdutoFormData = {
   name: '',
+  cnpj: '',
   categoryId: '',
   assetClassId: '',
   institutionId: '',
+  regionId: '',
   details: '',
   contribution: 0,
   withdrawal: 0,
-  valueBrl: 0,
   valueUsd: 0,
-  returnPct: 0,
-  income: 0,
+  valueBrl: 0,
 }
 
 export function ProdutoModal({
@@ -54,6 +55,7 @@ export function ProdutoModal({
   categories,
   assetClasses,
   institutions,
+  regions,
   onCancel,
   onSubmit,
 }: ProdutoModalProps) {
@@ -62,22 +64,23 @@ export function ProdutoModal({
   useEffect(() => {
     if (mode === 'edit' && product) {
       setForm({
-        name:         product.name,
-        categoryId:   product.categoryId,
-        assetClassId: product.assetClassId,
+        name:          product.name,
+        cnpj:          product.cnpj ?? '',
+        categoryId:    product.categoryId,
+        assetClassId:  product.assetClassId,
         institutionId: product.institutionId,
-        details:      product.details ?? '',
-        contribution: entry?.contribution ?? 0,
-        withdrawal:   entry?.withdrawal  ?? 0,
-        valueBrl:     entry?.valueBrl    ?? 0,
-        valueUsd:     entry?.valueUsd    ?? 0,
-        returnPct:    entry?.returnPct   ?? 0,
-        income:       entry?.income      ?? 0,
+        regionId:      product.regionId ?? '',
+        details:       product.details ?? '',
+        contribution:  entry?.contribution ?? 0,
+        withdrawal:    entry?.withdrawal   ?? 0,
+        valueUsd:      entry?.valueUsd     ?? 0,
+        valueBrl:      entry?.valueBrl     ?? 0,
       })
     } else {
-      setForm(EMPTY_FORM)
+      const defaultRegion = regions.find(r => r.isDefault) ?? regions[0]
+      setForm({ ...EMPTY_FORM, regionId: defaultRegion?.id ?? '' })
     }
-  }, [mode, product, entry])
+  }, [mode, product, entry, regions])
 
   const filteredClasses = assetClasses.filter(ac => ac.categoryId === form.categoryId)
 
@@ -96,10 +99,7 @@ export function ProdutoModal({
 
   const monthLabel = `${MONTHS[selectedMonth - 1]}/${selectedYear}`
 
-  const inputStyle: React.CSSProperties = { }
-
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
@@ -109,7 +109,7 @@ export function ProdutoModal({
         className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in"
         style={{ padding: '1.5rem' }}
       >
-        {/* Modal header */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -121,7 +121,7 @@ export function ProdutoModal({
           </div>
           <button
             onClick={onCancel}
-            className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-md"
             style={{ color: 'var(--text-muted)' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -130,16 +130,15 @@ export function ProdutoModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          {/* ── Seção 1: dados do produto ── */}
           <div className="grid grid-cols-2 gap-4">
             {/* Nome */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Nome
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Nome</label>
               <input
                 className="input"
-                style={inputStyle}
                 required
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
@@ -149,9 +148,7 @@ export function ProdutoModal({
 
             {/* Categoria */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Categoria
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Categoria</label>
               <select
                 className="input"
                 required
@@ -159,17 +156,13 @@ export function ProdutoModal({
                 onChange={e => handleCategoryChange(e.target.value)}
               >
                 <option value="">Selecione...</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
-            {/* Subcategoria (Classe) */}
+            {/* Subcategoria */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Subcategoria
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Subcategoria</label>
               <select
                 className="input"
                 required
@@ -178,17 +171,13 @@ export function ProdutoModal({
                 disabled={!form.categoryId}
               >
                 <option value="">Selecione...</option>
-                {filteredClasses.map(ac => (
-                  <option key={ac.id} value={ac.id}>{ac.name}</option>
-                ))}
+                {filteredClasses.map(ac => <option key={ac.id} value={ac.id}>{ac.name}</option>)}
               </select>
             </div>
 
             {/* Instituição */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Instituição
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Instituição</label>
               <select
                 className="input"
                 required
@@ -196,17 +185,37 @@ export function ProdutoModal({
                 onChange={e => set('institutionId', e.target.value)}
               >
                 <option value="">Selecione...</option>
-                {institutions.map(i => (
-                  <option key={i.id} value={i.id}>{i.name}</option>
-                ))}
+                {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
               </select>
             </div>
 
-            {/* Detalhes (full width) */}
+            {/* Região */}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Região</label>
+              <select
+                className="input"
+                value={form.regionId}
+                onChange={e => set('regionId', e.target.value)}
+              >
+                <option value="">Selecione...</option>
+                {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+
+            {/* CNPJ */}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>CNPJ</label>
+              <input
+                className="input"
+                value={form.cnpj}
+                onChange={e => set('cnpj', e.target.value)}
+                placeholder="Ex: 00.000.000/0001-00"
+              />
+            </div>
+
+            {/* Detalhes */}
             <div className="col-span-2">
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Detalhes
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Detalhes</label>
               <input
                 className="input"
                 value={form.details}
@@ -214,12 +223,22 @@ export function ProdutoModal({
                 placeholder="Ex: IPCA +5,6% · 05/2025"
               />
             </div>
+          </div>
 
+          {/* ── Separador ── */}
+          <div className="flex items-center gap-3 pt-1">
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span className="text-xs font-medium" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Movimentação do mês
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
+
+          {/* ── Seção 2: movimentação ── */}
+          <div className="grid grid-cols-2 gap-4">
             {/* Aporte */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Aporte R$
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Aporte R$</label>
               <input
                 type="number"
                 className="input"
@@ -232,9 +251,7 @@ export function ProdutoModal({
 
             {/* Retirada */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Retirada R$
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Retirada R$</label>
               <input
                 type="number"
                 className="input"
@@ -245,26 +262,9 @@ export function ProdutoModal({
               />
             </div>
 
-            {/* Total BRL */}
-            <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Total BRL R$
-              </label>
-              <input
-                type="number"
-                className="input"
-                min={0}
-                step={0.01}
-                value={form.valueBrl}
-                onChange={e => set('valueBrl', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-
             {/* Total USD */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Total USD $
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Total USD $</label>
               <input
                 type="number"
                 className="input"
@@ -275,40 +275,23 @@ export function ProdutoModal({
               />
             </div>
 
-            {/* Rentabilidade */}
+            {/* Total BRL */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Rentabilidade %
-              </label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Total BRL R$</label>
               <input
                 type="number"
                 className="input"
+                min={0}
                 step={0.01}
-                value={form.returnPct}
-                onChange={e => set('returnPct', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-
-            {/* Ganhos */}
-            <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Ganhos R$
-              </label>
-              <input
-                type="number"
-                className="input"
-                step={0.01}
-                value={form.income}
-                onChange={e => set('income', parseFloat(e.target.value) || 0)}
+                value={form.valueBrl}
+                onChange={e => set('valueBrl', parseFloat(e.target.value) || 0)}
               />
             </div>
           </div>
 
-          {/* Footer buttons */}
-          <div className="flex justify-end gap-3 mt-6">
-            <button type="button" className="btn-ghost" onClick={onCancel}>
-              Cancelar
-            </button>
+          {/* Footer */}
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
             <button type="submit" className="btn-brand">
               {mode === 'create' ? 'Adicionar' : 'Salvar'}
             </button>

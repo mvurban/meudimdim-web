@@ -38,6 +38,12 @@ export interface Institution {
   logoUrl?: string
 }
 
+export interface Region {
+  id: string
+  name: string
+  isDefault: boolean
+}
+
 // ─────────────────────────────────────────────
 // EXCHANGE RATES
 // ─────────────────────────────────────────────
@@ -78,7 +84,7 @@ export interface Product {
   assetClass?: AssetClass
   institutionId: string
   institution?: Institution
-  region: RegionType
+  regionId: string
   country?: string
   currency: ProductCurrency
   liquidity: Liquidity

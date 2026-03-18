@@ -1,5 +1,5 @@
-import type { Category, AssetClass, Institution } from '@/types'
-import { mockCategories, mockAssetClasses, mockInstitutions } from './mock-data'
+import type { Category, AssetClass, Institution, Region } from '@/types'
+import { mockCategories, mockAssetClasses, mockInstitutions, mockRegions } from './mock-data'
 
 // ─────────────────────────────────────────────
 // Ações (mock-only type — será substituído por API + Yahoo Finance)
@@ -53,6 +53,7 @@ export function initUserData(email: string): void {
   localStorage.setItem(key(email, 'categories'), JSON.stringify(mockCategories))
   localStorage.setItem(key(email, 'assetClasses'), JSON.stringify(mockAssetClasses))
   localStorage.setItem(key(email, 'institutions'), JSON.stringify(mockInstitutions))
+  localStorage.setItem(key(email, 'regions'), JSON.stringify(mockRegions))
   localStorage.setItem(key(email, 'products'), JSON.stringify([]))
   localStorage.setItem(key(email, 'acoes'), JSON.stringify(DEFAULT_ACOES))
   localStorage.setItem(key(email, 'initialized'), '1')
@@ -85,6 +86,31 @@ export function setInstitutions(email: string, items: Institution[]): void {
   localStorage.setItem(key(email, 'institutions'), JSON.stringify(items))
 }
 
+export function getRegions(email: string): Region[] {
+  const d = localStorage.getItem(key(email, 'regions'))
+  const regions: Region[] = d ? JSON.parse(d) : mockRegions
+
+  // Migration: ensure exactly one region has isDefault
+  const hasDefault = regions.some(r => r.isDefault)
+  if (!hasDefault && regions.length > 0) {
+    const brasil = regions.find(r => r.name.toLowerCase() === 'brasil')
+    const target = brasil ?? regions[0]
+    const migrated = regions.map(r => ({ ...r, isDefault: r.id === target.id }))
+    localStorage.setItem(key(email, 'regions'), JSON.stringify(migrated))
+    return migrated
+  }
+  return regions
+}
+
+export function setRegions(email: string, items: Region[]): void {
+  localStorage.setItem(key(email, 'regions'), JSON.stringify(items))
+}
+
+export function getDefaultRegion(email: string): Region | undefined {
+  const regions = getRegions(email)
+  return regions.find(r => r.isDefault) ?? regions[0]
+}
+
 export function getAcoes(email: string): AcaoItem[] {
   const d = localStorage.getItem(key(email, 'acoes'))
   return d ? JSON.parse(d) : []
@@ -95,7 +121,7 @@ export function setAcoes(email: string, items: AcaoItem[]): void {
 }
 
 export function deleteUserData(email: string): void {
-  ['categories', 'assetClasses', 'institutions', 'products', 'acoes', 'initialized'].forEach(e => {
+  ['categories', 'assetClasses', 'institutions', 'regions', 'products', 'acoes', 'initialized'].forEach(e => {
     localStorage.removeItem(key(email, e))
   })
 }
