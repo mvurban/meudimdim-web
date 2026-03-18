@@ -1,30 +1,23 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
 
-export default withAuth(
-  function middleware(req) {
-    if (req.nextUrl.pathname === "/" && req.nextauth.token) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-  },
-  {
-    callbacks: {
-      authorized: ({ req, token }) => {
-        const { pathname } = req.nextUrl;
-        const protectedPrefixes = [
-          "/dashboard",
-          "/configuracoes",
-          "/produtos",
-          "/acoes",
-        ];
-        if (protectedPrefixes.some(p => pathname.startsWith(p))) {
-          return !!token;
-        }
-        return true;
-      },
-    },
-  },
-);
+const protectedPrefixes = ["/dashboard", "/configuracoes", "/produtos", "/acoes"]
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // NextAuth v5 seta "authjs.session-token" (dev) ou "__Secure-authjs.session-token" (prod)
+  const hasSession =
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token")
+
+  if (pathname === "/" && hasSession) {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
+  }
+
+  if (protectedPrefixes.some(p => pathname.startsWith(p)) && !hasSession) {
+    return NextResponse.redirect(new URL("/", req.url))
+  }
+}
 
 export const config = {
   matcher: [
@@ -34,4 +27,4 @@ export const config = {
     "/produtos/:path*",
     "/acoes/:path*",
   ],
-};
+}

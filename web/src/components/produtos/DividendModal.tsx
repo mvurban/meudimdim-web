@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Dividend } from '@/types'
 import { formatBRL } from '@/lib/utils'
 import { MONTHS } from '@/lib/utils'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 
 interface DividendModalProps {
   productId: string
@@ -65,6 +66,7 @@ export function DividendModal({
   }
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
@@ -221,6 +223,7 @@ export function DividendModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

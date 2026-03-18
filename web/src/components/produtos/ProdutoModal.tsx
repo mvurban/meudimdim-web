@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { MONTHS } from '@/lib/utils'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 
 export interface ProdutoFormData {
   name: string
@@ -107,6 +108,7 @@ export function ProdutoModal({
   const monthLabel = `${MONTHS[selectedMonth - 1]}/${selectedYear}`
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
@@ -337,5 +339,6 @@ export function ProdutoModal({
         </form>
       </div>
     </div>
+    </ModalPortal>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -27,6 +28,7 @@ export function CopyFromPrevModal({
   const destLabel = `${MONTHS[destMonth - 1]}/${destYear}`
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
@@ -137,5 +139,6 @@ export function CopyFromPrevModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }

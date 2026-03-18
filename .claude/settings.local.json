@@ -3,7 +3,14 @@
     "allow": [
       "WebFetch(domain:prod-vista-mes.lovable.app)",
       "Bash(cd:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find C:/Projetos/mvurban/meudimdim/meudimdim-web/web/src -name *.css)",
+      "Bash(find C:/Projetos/mvurban/meudimdim/meudimdim-web/web -maxdepth 3 -name *.css)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const p = require\\(''/app/web/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js''\\); console.log\\(Object.keys\\(p\\).slice\\(0,20\\)\\)\")"
     ]
   }
 }

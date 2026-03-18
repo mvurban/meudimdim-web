@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { formatBRL, formatUSD, MONTHS } from '@/lib/utils'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 
 interface ProductDetailModalProps {
   product: Product
@@ -44,6 +45,7 @@ export function ProductDetailModal({
   }, [entries])
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
@@ -149,7 +151,7 @@ export function ProductDetailModal({
                     width={70}
                   />
                   <Tooltip
-                    formatter={(v: number) => [formatBRL(v), 'Total BRL']}
+                    formatter={(v) => [formatBRL(Number(v ?? 0)), 'Total BRL']}
                     contentStyle={{
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border)',
@@ -178,6 +180,7 @@ export function ProductDetailModal({
         )}
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

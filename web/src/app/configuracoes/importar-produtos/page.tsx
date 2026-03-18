@@ -9,14 +9,18 @@ import {
   mockCategories,
   mockAssetClasses,
   mockInstitutions,
+  mockRegions,
+  mockLiquidityOptions,
 } from '@/lib/mock-data'
-import type { Category, AssetClass, Institution } from '@/types'
+import type { Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 
 export default function ImportarProdutosPage() {
   const router = useRouter()
-  const [categories]   = useState<Category[]>(mockCategories)
-  const [assetClasses] = useState<AssetClass[]>(mockAssetClasses)
-  const [institutions] = useState<Institution[]>(mockInstitutions)
+  const [categories]       = useState<Category[]>(mockCategories)
+  const [assetClasses]     = useState<AssetClass[]>(mockAssetClasses)
+  const [institutions]     = useState<Institution[]>(mockInstitutions)
+  const [regions]          = useState<Region[]>(mockRegions)
+  const [liquidityOptions] = useState<LiquidityOption[]>(mockLiquidityOptions)
   const [modalOpen, setModalOpen] = useState(false)
 
   function handleImport(result: ImportResult) {
@@ -94,6 +98,8 @@ export default function ImportarProdutosPage() {
           categories={categories}
           assetClasses={assetClasses}
           institutions={institutions}
+          regions={regions}
+          liquidityOptions={liquidityOptions}
           onCancel={() => setModalOpen(false)}
           onImport={handleImport}
         />
