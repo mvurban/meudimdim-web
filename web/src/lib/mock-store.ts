@@ -1,5 +1,5 @@
-import type { Category, AssetClass, Institution, Region } from '@/types'
-import { mockCategories, mockAssetClasses, mockInstitutions, mockRegions } from './mock-data'
+import type { Category, AssetClass, Institution, Region, LiquidityOption, Dividend, BenchmarkEntry } from '@/types'
+import { mockCategories, mockAssetClasses, mockInstitutions, mockRegions, mockLiquidityOptions, mockDividends, mockBenchmarks } from './mock-data'
 
 // ─────────────────────────────────────────────
 // Ações (mock-only type — será substituído por API + Yahoo Finance)
@@ -54,7 +54,10 @@ export function initUserData(email: string): void {
   localStorage.setItem(key(email, 'assetClasses'), JSON.stringify(mockAssetClasses))
   localStorage.setItem(key(email, 'institutions'), JSON.stringify(mockInstitutions))
   localStorage.setItem(key(email, 'regions'), JSON.stringify(mockRegions))
+  localStorage.setItem(key(email, 'liquidityOptions'), JSON.stringify(mockLiquidityOptions))
   localStorage.setItem(key(email, 'products'), JSON.stringify([]))
+  localStorage.setItem(key(email, 'dividends'), JSON.stringify(mockDividends))
+  localStorage.setItem(key(email, 'benchmarks'), JSON.stringify(mockBenchmarks))
   localStorage.setItem(key(email, 'acoes'), JSON.stringify(DEFAULT_ACOES))
   localStorage.setItem(key(email, 'initialized'), '1')
 }
@@ -106,9 +109,36 @@ export function setRegions(email: string, items: Region[]): void {
   localStorage.setItem(key(email, 'regions'), JSON.stringify(items))
 }
 
+export function getLiquidityOptions(email: string): LiquidityOption[] {
+  const d = localStorage.getItem(key(email, 'liquidityOptions'))
+  return d ? JSON.parse(d) : mockLiquidityOptions
+}
+
+export function setLiquidityOptions(email: string, items: LiquidityOption[]): void {
+  localStorage.setItem(key(email, 'liquidityOptions'), JSON.stringify(items))
+}
+
 export function getDefaultRegion(email: string): Region | undefined {
   const regions = getRegions(email)
   return regions.find(r => r.isDefault) ?? regions[0]
+}
+
+export function getBenchmarks(email: string): BenchmarkEntry[] {
+  const d = localStorage.getItem(key(email, 'benchmarks'))
+  return d ? JSON.parse(d) : mockBenchmarks
+}
+
+export function setBenchmarks(email: string, items: BenchmarkEntry[]): void {
+  localStorage.setItem(key(email, 'benchmarks'), JSON.stringify(items))
+}
+
+export function getDividends(email: string): Dividend[] {
+  const d = localStorage.getItem(key(email, 'dividends'))
+  return d ? JSON.parse(d) : mockDividends
+}
+
+export function setDividends(email: string, items: Dividend[]): void {
+  localStorage.setItem(key(email, 'dividends'), JSON.stringify(items))
 }
 
 export function getAcoes(email: string): AcaoItem[] {
@@ -121,7 +151,7 @@ export function setAcoes(email: string, items: AcaoItem[]): void {
 }
 
 export function deleteUserData(email: string): void {
-  ['categories', 'assetClasses', 'institutions', 'regions', 'products', 'acoes', 'initialized'].forEach(e => {
+  ['categories', 'assetClasses', 'institutions', 'regions', 'liquidityOptions', 'products', 'dividends', 'benchmarks', 'acoes', 'initialized'].forEach(e => {
     localStorage.removeItem(key(email, e))
   })
 }

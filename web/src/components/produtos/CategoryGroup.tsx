@@ -10,6 +10,8 @@ interface CategoryGroupProps {
   institutions: Institution[]
   onEdit: (productId: string) => void
   onDetail: (productId: string) => void
+  onDividend: (productId: string) => void
+  dividendByProduct: Record<string, number>
 }
 
 export function CategoryGroup({
@@ -20,14 +22,20 @@ export function CategoryGroup({
   institutions,
   onEdit,
   onDetail,
+  onDividend,
+  dividendByProduct,
 }: CategoryGroupProps) {
   const totalBrl          = entries.reduce((s, e) => s + e.valueBrl, 0)
   const totalUsd          = entries.reduce((s, e) => s + e.valueUsd, 0)
-  const totalIncome       = entries.reduce((s, e) => s + e.income, 0)
+  const totalIncome       = entries.reduce((s, e) => s + e.income + (dividendByProduct[e.productId] ?? 0), 0)
   const totalContribution = entries.reduce((s, e) => s + e.contribution, 0)
   const totalWithdrawal   = entries.reduce((s, e) => s + e.withdrawal, 0)
   const avgReturn         = entries.length
-    ? entries.reduce((s, e) => s + e.returnPct, 0) / entries.length
+    ? entries.reduce((s, e) => {
+        const divTotal = dividendByProduct[e.productId] ?? 0
+        const base = e.valueBrl > 0 ? divTotal / e.valueBrl * 100 : 0
+        return s + e.returnPct + base
+      }, 0) / entries.length
     : 0
 
   return (
@@ -108,8 +116,8 @@ export function CategoryGroup({
           </div>
         </div>
 
-        {/* Ação (4%) — vazio */}
-        <div style={{ width: '4%' }} />
+        {/* Ações (7%) — vazio */}
+        <div style={{ width: '7%' }} />
       </div>
 
       {/* Table */}
@@ -124,7 +132,7 @@ export function CategoryGroup({
             <col style={{ width: '10%' }} />
             <col style={{ width: '10%' }} />
             <col style={{ width: '12%' }} />
-            <col style={{ width: '4%' }} />
+            <col style={{ width: '7%' }} />
           </colgroup>
 <tbody>
             {entries.map(entry => {
@@ -143,6 +151,8 @@ export function CategoryGroup({
                   institution={institution}
                   onEdit={() => onEdit(product.id)}
                   onDetail={() => onDetail(product.id)}
+                  onDividend={() => onDividend(product.id)}
+                  dividendTotal={dividendByProduct[entry.productId] ?? 0}
                 />
               )
             })}

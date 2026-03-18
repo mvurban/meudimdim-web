@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import type { Product, ProductEntry, Category, AssetClass, Institution, Region } from '@/types'
+import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { formatBRL, formatUSD, MONTHS } from '@/lib/utils'
 
 interface ProductDetailModalProps {
@@ -16,6 +16,8 @@ interface ProductDetailModalProps {
   assetClass: AssetClass
   institution: Institution
   region?: Region
+  liquidityOption?: LiquidityOption
+  dividendTotal: number
   onClose: () => void
 }
 
@@ -27,6 +29,8 @@ export function ProductDetailModal({
   assetClass,
   institution,
   region,
+  liquidityOption,
+  dividendTotal,
   onClose,
 }: ProductDetailModalProps) {
   const chartData = useMemo(() => {
@@ -84,8 +88,9 @@ export function ProductDetailModal({
         >
           <InfoItem label="Instituição" value={institution.name} />
           <InfoItem label="Região"      value={region?.name ?? '—'} />
+          <InfoItem label="Liquidez"    value={liquidityOption?.name ?? '—'} />
           <InfoItem label="CNPJ"        value={product.cnpj || '—'} />
-          <InfoItem label="Detalhes"    value={product.details || '—'} />
+          <InfoItem label="Detalhes"    value={product.details || '—'} className="col-span-2" />
         </div>
 
         {/* Movimentação do mês */}
@@ -103,10 +108,15 @@ export function ProductDetailModal({
               className="grid grid-cols-2 gap-x-8 gap-y-3 p-4 rounded-lg"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
             >
-              <InfoItem label="Aporte R$"   value={formatBRL(currentEntry.contribution)} />
-              <InfoItem label="Retirada R$"  value={formatBRL(currentEntry.withdrawal)} />
-              <InfoItem label="Total USD $"  value={formatUSD(currentEntry.valueUsd)} />
-              <InfoItem label="Total BRL R$" value={formatBRL(currentEntry.valueBrl)} />
+              <InfoItem label="Aporte R$"        value={formatBRL(currentEntry.contribution)} />
+              <InfoItem label="Retirada R$"       value={formatBRL(currentEntry.withdrawal)} />
+              <InfoItem label="Total USD $"        value={formatUSD(currentEntry.valueUsd)} />
+              <InfoItem label="Total BRL R$"       value={formatBRL(currentEntry.valueBrl)} />
+              <InfoItem
+                label="Dividendos recebidos"
+                value={dividendTotal > 0 ? formatBRL(dividendTotal) : '—'}
+                highlight={dividendTotal > 0}
+              />
             </div>
           </>
         )}
@@ -172,12 +182,12 @@ export function ProductDetailModal({
 }
 
 function InfoItem({
-  label, value, className,
-}: { label: string; value: string; className?: string }) {
+  label, value, className, highlight,
+}: { label: string; value: string; className?: string; highlight?: boolean }) {
   return (
     <div className={className}>
       <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
-      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{value}</p>
+      <p className="text-sm font-medium" style={{ color: highlight ? 'var(--success)' : 'var(--text-primary)' }}>{value}</p>
     </div>
   )
 }

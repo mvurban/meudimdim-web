@@ -67,6 +67,11 @@ export interface Liquidity {
   unit: LiquidityUnit
 }
 
+export interface LiquidityOption {
+  id: string
+  name: string   // ex: 'D+0', 'D+1', '30 dias', 'No vencimento'
+}
+
 // ─────────────────────────────────────────────
 // PRODUCT
 // ─────────────────────────────────────────────
@@ -87,7 +92,7 @@ export interface Product {
   regionId: string
   country?: string
   currency: ProductCurrency
-  liquidity: Liquidity
+  liquidityId: string
   status: ProductStatus
   createdAt: string
   details?: string
@@ -121,18 +126,28 @@ export interface ProductEntry {
 }
 
 // ─────────────────────────────────────────────
+// BENCHMARK
+// ─────────────────────────────────────────────
+export interface BenchmarkEntry {
+  id: string
+  month: number   // 1–12
+  year: number
+  cdi: number        // % mensal acumulado
+  ipca: number       // % variação mensal
+  poupanca: number   // % rendimento mensal
+  ibovespa: number   // % variação mensal
+}
+
+// ─────────────────────────────────────────────
 // DIVIDENDS
 // ─────────────────────────────────────────────
-export type DividendType = 'Dividendo' | 'JCP' | 'Outros'
-
 export interface Dividend {
   id: string
-  productId?: string
-  ticker?: string
-  date: string      // ISO
-  value: number
-  type: DividendType
-  notes?: string
+  productId: string
+  date: string        // ISO: yyyy-mm-dd — user enters day, system fills month/year
+  dividendo: number
+  jcp: number
+  outros: number
 }
 
 // ─────────────────────────────────────────────

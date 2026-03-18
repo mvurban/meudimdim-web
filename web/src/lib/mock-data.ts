@@ -1,6 +1,6 @@
 import type {
-  User, Category, AssetClass, Institution, Region,
-  ExchangeRate, Product, ProductEntry, Dividend,
+  User, Category, AssetClass, Institution, Region, LiquidityOption,
+  ExchangeRate, Product, ProductEntry, Dividend, BenchmarkEntry,
   StockTicker, DashboardData, InstitutionView,
 } from '@/types'
 
@@ -55,6 +55,23 @@ export const mockInstitutions: Institution[] = [
 ]
 
 // ─────────────────────────────────────────────
+// LIQUIDITY OPTIONS
+// ─────────────────────────────────────────────
+export const mockLiquidityOptions: LiquidityOption[] = [
+  { id: 'liq1',  name: 'D+0'            },
+  { id: 'liq2',  name: 'D+1'            },
+  { id: 'liq3',  name: 'D+2'            },
+  { id: 'liq4',  name: 'D+3'            },
+  { id: 'liq5',  name: '30 dias'        },
+  { id: 'liq6',  name: '60 dias'        },
+  { id: 'liq7',  name: '90 dias'        },
+  { id: 'liq8',  name: '180 dias'       },
+  { id: 'liq9',  name: '1 ano'          },
+  { id: 'liq10', name: '2 anos'         },
+  { id: 'liq11', name: 'No vencimento'  },
+]
+
+// ─────────────────────────────────────────────
 // REGIONS
 // ─────────────────────────────────────────────
 export const mockRegions: Region[] = [
@@ -98,7 +115,7 @@ export const mockProducts: Product[] = [
     institutionId: 'i1',
     regionId: 'r1',
     currency: 'BRL',
-    liquidity: { value: 1, unit: 'days' },
+    liquidityId: 'liq2',
     status: 'active',
     createdAt: '2024-01-01',
     details: '110% CDI · D+1',
@@ -114,7 +131,7 @@ export const mockProducts: Product[] = [
     institutionId: 'i5',
     regionId: 'r1',
     currency: 'BRL',
-    liquidity: { value: 4, unit: 'years' },
+    liquidityId: 'liq11',
     status: 'active',
     createdAt: '2024-03-01',
     details: 'IPCA + 5,6% · 05/2029',
@@ -130,7 +147,7 @@ export const mockProducts: Product[] = [
     institutionId: 'i1',
     regionId: 'r1',
     currency: 'BRL',
-    liquidity: { value: 30, unit: 'days' },
+    liquidityId: 'liq5',
     status: 'active',
     createdAt: '2023-06-01',
     details: 'Resgate em 30 dias corridos',
@@ -146,7 +163,7 @@ export const mockProducts: Product[] = [
     institutionId: 'i2',
     regionId: 'r1',
     currency: 'BRL',
-    liquidity: { value: 2, unit: 'days' },
+    liquidityId: 'liq3',
     status: 'active',
     createdAt: '2023-01-01',
     details: 'Carteira diversificada BR',
@@ -163,7 +180,7 @@ export const mockProducts: Product[] = [
     regionId: 'r2',
     country: 'EUA',
     currency: 'USD',
-    liquidity: { value: 2, unit: 'days' },
+    liquidityId: 'liq3',
     status: 'active',
     createdAt: '2023-09-01',
     details: 'Vanguard Real Estate ETF · EUA',
@@ -179,7 +196,7 @@ export const mockProducts: Product[] = [
     institutionId: 'i1',
     regionId: 'r1',
     currency: 'BRL',
-    liquidity: { value: 2, unit: 'days' },
+    liquidityId: 'liq3',
     status: 'active',
     createdAt: '2024-02-01',
     details: 'FII Logística · D+2',
@@ -250,13 +267,44 @@ export const mockEntries: ProductEntry[] = [
 ]
 
 // ─────────────────────────────────────────────
+// BENCHMARKS (abr/2024 → mar/2026)
+// Valores aproximados baseados em dados históricos reais do mercado brasileiro
+// ─────────────────────────────────────────────
+export const mockBenchmarks: BenchmarkEntry[] = [
+  { id: 'bm1',  month: 4,  year: 2024, cdi: 0.89, ipca: 0.38, poupanca: 0.62, ibovespa:  1.55 },
+  { id: 'bm2',  month: 5,  year: 2024, cdi: 0.83, ipca: 0.46, poupanca: 0.62, ibovespa: -3.01 },
+  { id: 'bm3',  month: 6,  year: 2024, cdi: 0.81, ipca: 0.20, poupanca: 0.62, ibovespa: -1.71 },
+  { id: 'bm4',  month: 7,  year: 2024, cdi: 0.90, ipca: 0.38, poupanca: 0.62, ibovespa:  4.69 },
+  { id: 'bm5',  month: 8,  year: 2024, cdi: 0.90, ipca: 0.44, poupanca: 0.62, ibovespa: -2.75 },
+  { id: 'bm6',  month: 9,  year: 2024, cdi: 0.88, ipca: 0.44, poupanca: 0.62, ibovespa: -3.08 },
+  { id: 'bm7',  month: 10, year: 2024, cdi: 0.96, ipca: 0.56, poupanca: 0.62, ibovespa: -1.59 },
+  { id: 'bm8',  month: 11, year: 2024, cdi: 0.94, ipca: 0.39, poupanca: 0.62, ibovespa: -3.12 },
+  { id: 'bm9',  month: 12, year: 2024, cdi: 0.97, ipca: 0.52, poupanca: 0.62, ibovespa: -4.79 },
+  { id: 'bm10', month: 1,  year: 2025, cdi: 1.07, ipca: 0.16, poupanca: 0.74, ibovespa:  4.98 },
+  { id: 'bm11', month: 2,  year: 2025, cdi: 1.06, ipca: 1.31, poupanca: 0.74, ibovespa: -1.48 },
+  { id: 'bm12', month: 3,  year: 2025, cdi: 1.12, ipca: 0.56, poupanca: 0.74, ibovespa: -0.34 },
+  { id: 'bm13', month: 4,  year: 2025, cdi: 1.09, ipca: 0.43, poupanca: 0.74, ibovespa: -1.01 },
+  { id: 'bm14', month: 5,  year: 2025, cdi: 1.10, ipca: 0.51, poupanca: 0.74, ibovespa:  4.22 },
+  { id: 'bm15', month: 6,  year: 2025, cdi: 1.07, ipca: 0.40, poupanca: 0.74, ibovespa:  1.13 },
+  { id: 'bm16', month: 7,  year: 2025, cdi: 1.08, ipca: 0.36, poupanca: 0.74, ibovespa:  2.89 },
+  { id: 'bm17', month: 8,  year: 2025, cdi: 1.07, ipca: 0.44, poupanca: 0.74, ibovespa: -1.65 },
+  { id: 'bm18', month: 9,  year: 2025, cdi: 1.05, ipca: 0.38, poupanca: 0.74, ibovespa:  3.41 },
+  { id: 'bm19', month: 10, year: 2025, cdi: 1.07, ipca: 0.45, poupanca: 0.74, ibovespa:  1.78 },
+  { id: 'bm20', month: 11, year: 2025, cdi: 1.06, ipca: 0.39, poupanca: 0.74, ibovespa:  2.15 },
+  { id: 'bm21', month: 12, year: 2025, cdi: 1.07, ipca: 0.52, poupanca: 0.74, ibovespa: -0.88 },
+  { id: 'bm22', month: 1,  year: 2026, cdi: 1.09, ipca: 0.48, poupanca: 0.74, ibovespa:  3.12 },
+  { id: 'bm23', month: 2,  year: 2026, cdi: 1.05, ipca: 0.42, poupanca: 0.74, ibovespa: -0.97 },
+  { id: 'bm24', month: 3,  year: 2026, cdi: 1.03, ipca: 0.37, poupanca: 0.74, ibovespa:  1.84 },
+]
+
+// ─────────────────────────────────────────────
 // DIVIDENDS
 // ─────────────────────────────────────────────
 export const mockDividends: Dividend[] = [
-  { id: 'd1', productId: 'p6', date: '2026-03-14', value: 876.00, type: 'Dividendo' },
-  { id: 'd2', productId: 'p6', date: '2026-02-14', value: 841.50, type: 'Dividendo' },
-  { id: 'd3', productId: 'p4', date: '2026-03-10', value: 320.00, type: 'JCP' },
-  { id: 'd4', productId: 'p4', date: '2026-02-10', value: 290.00, type: 'JCP' },
+  { id: 'd1', productId: 'p6', date: '2026-03-14', dividendo: 876.00, jcp: 0, outros: 0 },
+  { id: 'd2', productId: 'p6', date: '2026-02-14', dividendo: 841.50, jcp: 0, outros: 0 },
+  { id: 'd3', productId: 'p4', date: '2026-03-10', dividendo: 0, jcp: 320.00, outros: 0 },
+  { id: 'd4', productId: 'p4', date: '2026-02-10', dividendo: 0, jcp: 290.00, outros: 0 },
 ]
 
 // ─────────────────────────────────────────────

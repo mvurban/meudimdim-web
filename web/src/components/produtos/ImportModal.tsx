@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import type { Category, AssetClass, Institution, Region } from '@/types'
+import type { Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { parseCsvImport, generateCsvTemplate } from '@/lib/csv-import'
 import type { ImportResult } from '@/lib/csv-import'
 
@@ -10,6 +10,7 @@ interface ImportModalProps {
   assetClasses: AssetClass[]
   institutions: Institution[]
   regions: Region[]
+  liquidityOptions: LiquidityOption[]
   onCancel: () => void
   onImport: (result: ImportResult) => void
 }
@@ -18,7 +19,7 @@ type Screen = 'idle' | 'preview' | 'error' | 'importing' | 'done'
 
 const IMPORT_DURATION_MS = 900
 
-export function ImportModal({ categories, assetClasses, institutions, regions, onCancel, onImport }: ImportModalProps) {
+export function ImportModal({ categories, assetClasses, institutions, regions, liquidityOptions, onCancel, onImport }: ImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [screen, setScreen]   = useState<Screen>('idle')
   const [errors, setErrors]   = useState<string[]>([])
@@ -56,7 +57,7 @@ export function ImportModal({ categories, assetClasses, institutions, regions, o
     const reader = new FileReader()
     reader.onload = ev => {
       const text = ev.target?.result as string
-      const parsed = parseCsvImport(text, { categories, assetClasses, institutions, regions })
+      const parsed = parseCsvImport(text, { categories, assetClasses, institutions, regions, liquidityOptions })
       if (parsed.ok) {
         setResult(parsed.result)
         setScreen('preview')
@@ -148,6 +149,7 @@ export function ImportModal({ categories, assetClasses, institutions, regions, o
                       { col: 'detalhes',     desc: 'Descrição livre',               req: false },
                       { col: 'cnpj',         desc: 'CNPJ do produto',               req: false },
                       { col: 'regiao',       desc: 'Região (usa padrão se vazio)',   req: false },
+                      { col: 'liquidez',     desc: 'Liquidez (ex: D+1, 30 dias)',   req: false },
                       { col: 'aporte',       desc: 'Valor aportado no mês',         req: false },
                       { col: 'retirada',     desc: 'Valor retirado no mês',         req: false },
                       { col: 'ganhos',       desc: 'Rendimento bruto do mês',       req: false },
@@ -216,6 +218,11 @@ export function ImportModal({ categories, assetClasses, institutions, regions, o
                 {result.newRegions.length > 0 && (
                   <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     · {result.newRegions.length} região{result.newRegions.length !== 1 ? 'ões' : ''} nova{result.newRegions.length !== 1 ? 's' : ''}: {result.newRegions.map(r => r.name).join(', ')}
+                  </div>
+                )}
+                {result.newLiquidityOptions.length > 0 && (
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    · {result.newLiquidityOptions.length} opção{result.newLiquidityOptions.length !== 1 ? 'ões' : ''} de liquidez nova{result.newLiquidityOptions.length !== 1 ? 's' : ''}: {result.newLiquidityOptions.map(l => l.name).join(', ')}
                   </div>
                 )}
               </div>

@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getRegions, setRegions } from '@/lib/mock-store'
-import type { Region } from '@/types'
+import { getLiquidityOptions, setLiquidityOptions } from '@/lib/mock-store'
+import type { LiquidityOption } from '@/types'
 
-export default function RegioesConfigPage() {
+export default function LiquidezConfigPage() {
   const { data: session } = useSession()
-  const [items, setItemsState] = useState<Region[]>([])
+  const [items, setItemsState] = useState<LiquidityOption[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -16,13 +16,13 @@ export default function RegioesConfigPage() {
   const email = session?.user?.email ?? null
 
   useEffect(() => {
-    if (email) setItemsState(getRegions(email))
+    if (email) setItemsState(getLiquidityOptions(email))
   }, [email])
 
-  function setItems(updater: Region[] | ((prev: Region[]) => Region[])) {
+  function setItems(updater: LiquidityOption[] | ((prev: LiquidityOption[]) => LiquidityOption[])) {
     setItemsState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      if (email) setRegions(email, next)
+      if (email) setLiquidityOptions(email, next)
       return next
     })
   }
@@ -33,7 +33,7 @@ export default function RegioesConfigPage() {
     setAdding(true)
   }
 
-  function startEdit(item: Region) {
+  function startEdit(item: LiquidityOption) {
     setAdding(false)
     setName(item.name)
     setEditing(item.id)
@@ -48,7 +48,7 @@ export default function RegioesConfigPage() {
   function save() {
     if (!name.trim()) return
     if (adding) {
-      const newItem: Region = { id: `r${Date.now()}`, name: name.trim(), isDefault: false }
+      const newItem: LiquidityOption = { id: `liq${Date.now()}`, name: name.trim() }
       setItems(prev => [...prev, newItem])
     } else if (editing) {
       setItems(prev => prev.map(i => i.id === editing ? { ...i, name: name.trim() } : i))
@@ -56,30 +56,17 @@ export default function RegioesConfigPage() {
     cancel()
   }
 
-  function setDefault(id: string) {
-    setItems(prev => prev.map(i => ({ ...i, isDefault: i.id === id })))
-  }
-
   function remove(id: string) {
-    setItems(prev => {
-      if (prev.length <= 1) return prev // always keep at least one
-      const isRemovingDefault = prev.find(i => i.id === id)?.isDefault ?? false
-      const remaining = prev.filter(i => i.id !== id)
-      // if we removed the default, promote the first remaining
-      if (isRemovingDefault) {
-        return remaining.map((i, idx) => ({ ...i, isDefault: idx === 0 }))
-      }
-      return remaining
-    })
+    setItems(prev => prev.filter(i => i.id !== id))
   }
 
   return (
     <AppShell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>Regiões</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>Liquidez</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-            Gerencie as regiões geográficas dos produtos. A região padrão é usada quando nenhuma for especificada.
+            Opções de liquidez disponíveis para os produtos (ex: D+0, D+1, 30 dias…)
           </p>
         </div>
         <button onClick={startAdd} style={btnStyle('#22c55e')}>+ Adicionar</button>
@@ -88,7 +75,7 @@ export default function RegioesConfigPage() {
       {(adding || editing) && (
         <div style={cardStyle}>
           <p style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-            {adding ? 'Nova Região' : 'Editar Região'}
+            {adding ? 'Nova opção de liquidez' : 'Editar opção de liquidez'}
           </p>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 220 }}>
@@ -96,7 +83,7 @@ export default function RegioesConfigPage() {
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Ex: Brasil, EUA, Europa…"
+                placeholder="Ex: D+1, 30 dias, No vencimento…"
                 style={inputStyle}
                 onKeyDown={e => e.key === 'Enter' && save()}
                 autoFocus
@@ -121,46 +108,12 @@ export default function RegioesConfigPage() {
           <tbody>
             {items.map(item => (
               <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={tdStyle}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {item.name}
-                    {item.isDefault && (
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        fontSize: 10, fontWeight: 600, letterSpacing: '0.5px',
-                        padding: '2px 8px', borderRadius: 99,
-                        background: 'rgba(34,197,94,0.12)', color: '#22c55e',
-                        border: '1px solid rgba(34,197,94,0.25)',
-                      }}>
-                        ★ Padrão
-                      </span>
-                    )}
-                  </span>
-                </td>
+                <td style={tdStyle}>{item.name}</td>
                 <td style={{ ...tdStyle, textAlign: 'right' }}>
-                  {!item.isDefault && (
-                    <button
-                      onClick={() => setDefault(item.id)}
-                      style={actionBtn}
-                      title="Definir como padrão"
-                    >
-                      <IconStar />
-                    </button>
-                  )}
                   <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
                     <IconEdit />
                   </button>
-                  <button
-                    onClick={() => remove(item.id)}
-                    disabled={items.length <= 1}
-                    style={{
-                      ...actionBtn,
-                      color: items.length <= 1 ? 'var(--text-muted)' : 'var(--danger)',
-                      opacity: items.length <= 1 ? 0.4 : 1,
-                      cursor: items.length <= 1 ? 'not-allowed' : 'pointer',
-                    }}
-                    title={items.length <= 1 ? 'Deve haver pelo menos uma região' : 'Excluir'}
-                  >
+                  <button onClick={() => remove(item.id)} style={{ ...actionBtn, color: 'var(--danger)' }} title="Excluir">
                     <IconTrash />
                   </button>
                 </td>
@@ -169,7 +122,7 @@ export default function RegioesConfigPage() {
             {items.length === 0 && (
               <tr>
                 <td colSpan={2} style={{ ...tdStyle, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
-                  Nenhuma região cadastrada.
+                  Nenhuma opção de liquidez cadastrada.
                 </td>
               </tr>
             )}
@@ -250,14 +203,6 @@ const actionBtn: React.CSSProperties = {
   cursor: 'pointer',
   color: 'var(--text-muted)',
   padding: 0,
-}
-
-function IconStar() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  )
 }
 
 function IconEdit() {

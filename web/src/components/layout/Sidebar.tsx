@@ -24,8 +24,10 @@ const CONFIG_NAV = [
   { href: '/configuracoes/classes',       icon: '◫', label: 'Classes de Ativo', danger: false },
   { href: '/configuracoes/instituicoes',  icon: '◩', label: 'Instituições',     danger: false },
   { href: '/configuracoes/regioes',       icon: '◎', label: 'Regiões',           danger: false },
-  { href: '/configuracoes/cotacoes',          icon: '◐', label: 'Cotações',          danger: false },
-  { href: '/configuracoes/importar-produtos', icon: '↑', label: 'Importar Produtos', danger: false },
+  { href: '/configuracoes/liquidez',      icon: '◷', label: 'Liquidez',           danger: false },
+  { href: '/configuracoes/cotacoes',           icon: '◐', label: 'Cotações',          danger: false },
+  { href: '/configuracoes/benchmark',          icon: '◈', label: 'Benchmark',         danger: false },
+  { href: '/configuracoes/importar-produtos',  icon: '↑', label: 'Importar Produtos', danger: false },
   { href: '/configuracoes/excluir-conta',     icon: '⊗', label: 'Excluir conta',     danger: true  },
 ]
 

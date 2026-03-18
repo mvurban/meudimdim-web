@@ -12,6 +12,7 @@ import { ImportModal } from '@/components/produtos/ImportModal'
 import type { ImportResult } from '@/lib/csv-import'
 import { CopyFromPrevModal } from '@/components/produtos/CopyFromPrevModal'
 import { ProductDetailModal } from '@/components/produtos/ProductDetailModal'
+import { DividendModal } from '@/components/produtos/DividendModal'
 import {
   mockProducts,
   mockEntries,
@@ -19,8 +20,10 @@ import {
   mockAssetClasses,
   mockInstitutions,
   mockRegions,
+  mockLiquidityOptions,
+  mockDividends,
 } from '@/lib/mock-data'
-import type { Product, ProductEntry, Category, AssetClass, Institution, Region } from '@/types'
+import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
 import { useYear, CURRENT_YEAR, CURRENT_MONTH } from '@/lib/year-context'
 
 type ModalState =
@@ -43,12 +46,15 @@ export default function ProdutosPage() {
   const [assetClasses, setAssetClasses] = useState<AssetClass[]>(mockAssetClasses)
   const [institutions, setInstitutions] = useState<Institution[]>(mockInstitutions)
   const [regions, setRegions]           = useState<Region[]>(mockRegions)
+  const [liquidityOptions, setLiquidityOptions] = useState<LiquidityOption[]>(mockLiquidityOptions)
   const [products, setProducts]         = useState<Product[]>(mockProducts)
   const [entries, setEntries]           = useState<ProductEntry[]>(mockEntries)
+  const [dividends, setDividendsState]   = useState<Dividend[]>(mockDividends)
   const [modal, setModal]               = useState<ModalState>({ open: false })
   const [importOpen, setImportOpen]       = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
   const [detailProductId, setDetailProductId] = useState<string | null>(null)
+  const [dividendProductId, setDividendProductId] = useState<string | null>(null)
 
   // Previous month/year
   const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
@@ -76,6 +82,15 @@ export default function ProdutosPage() {
       return true
     })
   }, [monthEntries, products, categoryFilter, institutionFilter])
+
+  // Dividend totals per product for the selected month — computed directly (no memo)
+  const dividendByProduct: Record<string, number> = {}
+  for (const d of dividends) {
+    const [y, m] = d.date.split('-').map(Number)
+    if (m === selectedMonth && y === selectedYear) {
+      dividendByProduct[d.productId] = (dividendByProduct[d.productId] ?? 0) + d.dividendo + d.jcp + d.outros
+    }
+  }
 
   // Group entries by category (preserving category order)
   const groups = useMemo(() => {
@@ -143,8 +158,8 @@ export default function ProdutosPage() {
       assetClassId: data.assetClassId,
       institutionId: data.institutionId,
       regionId: data.regionId,
+      liquidityId: data.liquidityId,
       currency: 'BRL',
-      liquidity: { value: 1, unit: 'days' },
       status: 'active',
       createdAt: new Date().toISOString().slice(0, 10),
       details: data.details || undefined,
@@ -183,6 +198,7 @@ export default function ProdutosPage() {
               assetClassId: data.assetClassId,
               institutionId: data.institutionId,
               regionId: data.regionId,
+              liquidityId: data.liquidityId,
               details: data.details || undefined,
             }
           : p,
@@ -227,11 +243,23 @@ export default function ProdutosPage() {
     setCopyModalOpen(false)
   }
 
+  function handleSaveDividends(productId: string, month: number, year: number, updated: Dividend[]) {
+    setDividendsState(prev => [
+      ...prev.filter(d => {
+        if (d.productId !== productId) return true
+        const [y, m] = d.date.split('-').map(Number)
+        return !(m === month && y === year)
+      }),
+      ...updated,
+    ])
+  }
+
   function handleImport(result: ImportResult) {
     setCategories(prev => [...prev, ...result.newCategories])
     setAssetClasses(prev => [...prev, ...result.newAssetClasses])
     setInstitutions(prev => [...prev, ...result.newInstitutions])
     setRegions(prev => [...prev, ...result.newRegions])
+    setLiquidityOptions(prev => [...prev, ...result.newLiquidityOptions])
     setProducts(prev => [...prev, ...result.products])
     setEntries(prev => [...prev, ...result.entries])
     setImportOpen(false)
@@ -355,6 +383,8 @@ export default function ProdutosPage() {
                 institutions={institutions}
                 onEdit={productId => setModal({ open: true, mode: 'edit', productId })}
                 onDetail={setDetailProductId}
+                onDividend={setDividendProductId}
+                dividendByProduct={dividendByProduct}
               />
             ))}
           </div>
@@ -373,8 +403,13 @@ export default function ProdutosPage() {
           assetClasses={assetClasses}
           institutions={institutions}
           regions={regions}
+          liquidityOptions={liquidityOptions}
           onCancel={() => setModal({ open: false })}
           onSubmit={modal.mode === 'create' ? handleAdd : handleSave}
+          onDividend={modal.mode === 'edit' ? () => {
+            setDividendProductId(modal.productId)
+            setModal({ open: false })
+          } : undefined}
         />
       )}
 
@@ -399,6 +434,7 @@ export default function ProdutosPage() {
           assetClasses={assetClasses}
           institutions={institutions}
           regions={regions}
+          liquidityOptions={liquidityOptions}
           onCancel={() => setImportOpen(false)}
           onImport={handleImport}
         />
@@ -410,9 +446,17 @@ export default function ProdutosPage() {
         const category     = product ? categories.find(c => c.id === product.categoryId) : undefined
         const assetClass   = product ? assetClasses.find(a => a.id === product.assetClassId) : undefined
         const institution  = product ? institutions.find(i => i.id === product.institutionId) : undefined
-        const region       = product ? regions.find(r => r.id === product.regionId) : undefined
+        const region          = product ? regions.find(r => r.id === product.regionId) : undefined
+        const liquidityOption = product ? liquidityOptions.find(l => l.id === product.liquidityId) : undefined
         const prodEntries  = entries.filter(e => e.productId === detailProductId)
         const currentEntry = prodEntries.find(e => e.month === selectedMonth && e.year === selectedYear)
+        const dividendTotal = dividends
+          .filter(d => {
+            if (d.productId !== detailProductId) return false
+            const [y, m] = d.date.split('-').map(Number)
+            return m === selectedMonth && y === selectedYear
+          })
+          .reduce((acc, d) => acc + d.dividendo + d.jcp + d.outros, 0)
         if (!product || !category || !assetClass || !institution) return null
         return (
           <ProductDetailModal
@@ -423,7 +467,30 @@ export default function ProdutosPage() {
             assetClass={assetClass}
             institution={institution}
             region={region}
+            liquidityOption={liquidityOption}
+            dividendTotal={dividendTotal}
             onClose={() => setDetailProductId(null)}
+          />
+        )
+      })()}
+      {/* Modal de dividendos */}
+      {dividendProductId && (() => {
+        const product = products.find(p => p.id === dividendProductId)
+        if (!product) return null
+        const productDividends = dividends.filter(d => {
+          if (d.productId !== dividendProductId) return false
+          const [y, m] = d.date.split('-').map(Number)
+          return m === selectedMonth && y === selectedYear
+        })
+        return (
+          <DividendModal
+            productId={dividendProductId}
+            productName={product.name}
+            month={selectedMonth}
+            year={selectedYear}
+            dividends={productDividends}
+            onClose={() => setDividendProductId(null)}
+            onSave={updated => handleSaveDividends(dividendProductId, selectedMonth, selectedYear, updated)}
           />
         )
       })()}

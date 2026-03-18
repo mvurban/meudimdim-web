@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { Product, ProductEntry, Category, AssetClass, Institution, Region } from '@/types'
+import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { MONTHS } from '@/lib/utils'
 
 export interface ProdutoFormData {
@@ -11,6 +11,7 @@ export interface ProdutoFormData {
   assetClassId: string
   institutionId: string
   regionId: string
+  liquidityId: string
   details: string
   contribution: number
   withdrawal: number
@@ -28,8 +29,10 @@ interface ProdutoModalProps {
   assetClasses: AssetClass[]
   institutions: Institution[]
   regions: Region[]
+  liquidityOptions: LiquidityOption[]
   onCancel: () => void
   onSubmit: (data: ProdutoFormData) => void
+  onDividend?: () => void
 }
 
 const EMPTY_FORM: ProdutoFormData = {
@@ -39,6 +42,7 @@ const EMPTY_FORM: ProdutoFormData = {
   assetClassId: '',
   institutionId: '',
   regionId: '',
+  liquidityId: '',
   details: '',
   contribution: 0,
   withdrawal: 0,
@@ -56,8 +60,10 @@ export function ProdutoModal({
   assetClasses,
   institutions,
   regions,
+  liquidityOptions,
   onCancel,
   onSubmit,
+  onDividend,
 }: ProdutoModalProps) {
   const [form, setForm] = useState<ProdutoFormData>(EMPTY_FORM)
 
@@ -70,6 +76,7 @@ export function ProdutoModal({
         assetClassId:  product.assetClassId,
         institutionId: product.institutionId,
         regionId:      product.regionId ?? '',
+        liquidityId:   product.liquidityId ?? '',
         details:       product.details ?? '',
         contribution:  entry?.contribution ?? 0,
         withdrawal:    entry?.withdrawal   ?? 0,
@@ -78,9 +85,9 @@ export function ProdutoModal({
       })
     } else {
       const defaultRegion = regions.find(r => r.isDefault) ?? regions[0]
-      setForm({ ...EMPTY_FORM, regionId: defaultRegion?.id ?? '' })
+      setForm({ ...EMPTY_FORM, regionId: defaultRegion?.id ?? '', liquidityId: liquidityOptions[0]?.id ?? '' })
     }
-  }, [mode, product, entry, regions])
+  }, [mode, product, entry, regions, liquidityOptions])
 
   const filteredClasses = assetClasses.filter(ac => ac.categoryId === form.categoryId)
 
@@ -213,6 +220,19 @@ export function ProdutoModal({
               />
             </div>
 
+            {/* Liquidez */}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Liquidez</label>
+              <select
+                className="input"
+                value={form.liquidityId}
+                onChange={e => set('liquidityId', e.target.value)}
+              >
+                <option value="">Selecione...</option>
+                {liquidityOptions.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </div>
+
             {/* Detalhes */}
             <div className="col-span-2">
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Detalhes</label>
@@ -290,11 +310,29 @@ export function ProdutoModal({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 pt-1">
-            <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
-            <button type="submit" className="btn-brand">
-              {mode === 'create' ? 'Adicionar' : 'Salvar'}
-            </button>
+          <div className="flex items-center justify-between pt-1">
+            <div>
+              {mode === 'edit' && onDividend && (
+                <button
+                  type="button"
+                  className="btn-ghost flex items-center gap-2"
+                  onClick={onDividend}
+                  style={{ color: 'var(--success)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                  Dividendos
+                </button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
+              <button type="submit" className="btn-brand">
+                {mode === 'create' ? 'Adicionar' : 'Salvar'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

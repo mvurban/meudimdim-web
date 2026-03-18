@@ -14,9 +14,13 @@ interface ProductRowProps {
   institution: Institution
   onEdit: () => void
   onDetail: () => void
+  onDividend: () => void
+  dividendTotal: number
 }
 
-export function ProductRow({ entry, product, assetClass, institution, onEdit, onDetail }: ProductRowProps) {
+export function ProductRow({ entry, product, assetClass, institution, onEdit, onDetail, onDividend, dividendTotal }: ProductRowProps) {
+  const effectiveIncome = entry.income + dividendTotal
+  const effectiveReturn = entry.returnPct + (entry.valueBrl > 0 ? dividendTotal / entry.valueBrl * 100 : 0)
   return (
     <tr>
       {/* Institution avatar */}
@@ -59,9 +63,9 @@ export function ProductRow({ entry, product, assetClass, institution, onEdit, on
       {/* Rentabilidade */}
       <td
         className="font-medium"
-        style={{ color: entry.returnPct >= 0 ? 'var(--success)' : 'var(--danger)' }}
+        style={{ color: effectiveReturn >= 0 ? 'var(--success)' : 'var(--danger)' }}
       >
-        {formatPct(entry.returnPct)}
+        {formatPct(effectiveReturn)}
       </td>
 
       {/* Aporte */}
@@ -75,8 +79,8 @@ export function ProductRow({ entry, product, assetClass, institution, onEdit, on
       </td>
 
       {/* Ganhos */}
-      <td style={{ color: entry.income >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-        {formatBRL(entry.income)}
+      <td style={{ color: effectiveIncome >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+        {formatBRL(effectiveIncome)}
       </td>
 
       {/* Total USD */}
@@ -85,28 +89,32 @@ export function ProductRow({ entry, product, assetClass, institution, onEdit, on
       {/* Total BRL */}
       <td className="font-semibold">{formatBRL(entry.valueBrl)}</td>
 
-      {/* Action */}
+      {/* Actions */}
       <td>
-        <button
-          onClick={onEdit}
-          className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-          style={{ color: 'var(--text-muted)' }}
-          title="Editar produto"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={onDividend}
+            className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            title="Registrar dividendos"
           >
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </button>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </button>
+          <button
+            onClick={onEdit}
+            className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            title="Editar produto"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+        </div>
       </td>
     </tr>
   )

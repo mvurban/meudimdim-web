@@ -1,4 +1,4 @@
-import type { Category, AssetClass, Institution, Region, Product, ProductEntry } from '@/types'
+import type { Category, AssetClass, Institution, Region, LiquidityOption, Product, ProductEntry } from '@/types'
 
 export interface ImportResult {
   products: Product[]
@@ -7,13 +7,14 @@ export interface ImportResult {
   newAssetClasses: AssetClass[]
   newInstitutions: Institution[]
   newRegions: Region[]
+  newLiquidityOptions: LiquidityOption[]
 }
 
 type ParseSuccess = { ok: true; result: ImportResult }
 type ParseFailure = { ok: false; errors: string[] }
 
 const REQUIRED_COLS = ['nome', 'categoria', 'classe_ativo', 'instituicao', 'mes', 'ano', 'valor_brl'] as const
-const OPTIONAL_COLS = ['detalhes', 'cnpj', 'regiao', 'aporte', 'retirada', 'ganhos', 'valor_usd', 'cotacao'] as const
+const OPTIONAL_COLS = ['detalhes', 'cnpj', 'regiao', 'liquidez', 'aporte', 'retirada', 'ganhos', 'valor_usd', 'cotacao'] as const
 
 const DEFAULT_COLORS = ['#6366f1', '#f59e0b', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4']
 
@@ -53,6 +54,7 @@ export function parseCsvImport(
     assetClasses: AssetClass[]
     institutions: Institution[]
     regions: Region[]
+    liquidityOptions: LiquidityOption[]
   },
 ): ParseSuccess | ParseFailure {
   const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '')
@@ -77,15 +79,19 @@ export function parseCsvImport(
   const allCategories   = [...existing.categories]
   const allAssetClasses = [...existing.assetClasses]
   const allInstitutions = [...existing.institutions]
-  const allRegions      = [...existing.regions]
+  const allRegions          = [...existing.regions]
+  const allLiquidityOptions = [...existing.liquidityOptions]
 
-  const newCategories:  Category[]    = []
-  const newAssetClasses: AssetClass[] = []
-  const newInstitutions: Institution[] = []
-  const newRegions:     Region[]      = []
+  const newCategories:      Category[]       = []
+  const newAssetClasses:    AssetClass[]     = []
+  const newInstitutions:    Institution[]    = []
+  const newRegions:         Region[]         = []
+  const newLiquidityOptions: LiquidityOption[] = []
 
   // Determine default region fallback
   const defaultRegion = allRegions.find(r => r.isDefault) ?? allRegions[0]
+  // Determine default liquidity fallback (D+1 or first option)
+  const defaultLiquidity = allLiquidityOptions.find(l => l.name === 'D+1') ?? allLiquidityOptions[0]
 
   const products: Product[]     = []
   const entries:  ProductEntry[] = []
@@ -171,6 +177,20 @@ export function parseCsvImport(
       region = defaultRegion
     }
 
+    // Resolve liquidity — auto-register or fallback to default
+    const liquidityName = col(row, 'liquidez')
+    let liquidity: LiquidityOption | undefined
+    if (liquidityName) {
+      liquidity = allLiquidityOptions.find(l => l.name.toLowerCase() === liquidityName.toLowerCase())
+      if (!liquidity) {
+        liquidity = { id: `liq_imp_${Date.now()}_${i}`, name: liquidityName }
+        allLiquidityOptions.push(liquidity)
+        newLiquidityOptions.push(liquidity)
+      }
+    } else {
+      liquidity = defaultLiquidity
+    }
+
     // Build Product
     const productId = `p_imp_${Date.now()}_${i}`
     const product: Product = {
@@ -181,8 +201,8 @@ export function parseCsvImport(
       assetClassId: ac.id,
       institutionId: inst.id,
       regionId: region?.id ?? defaultRegion?.id ?? '',
+      liquidityId: liquidity?.id ?? defaultLiquidity?.id ?? '',
       currency: 'BRL',
-      liquidity: { value: 1, unit: 'days' },
       status: 'active',
       createdAt: now,
       details: col(row, 'detalhes') || undefined,
@@ -220,7 +240,7 @@ export function parseCsvImport(
     return { ok: false, errors }
   }
 
-  return { ok: true, result: { products, entries, newCategories, newAssetClasses, newInstitutions, newRegions } }
+  return { ok: true, result: { products, entries, newCategories, newAssetClasses, newInstitutions, newRegions, newLiquidityOptions } }
 }
 
 export function generateCsvTemplate(): string {
@@ -236,6 +256,7 @@ export function generateCsvTemplate(): string {
     'Vence em dez/2027', // detalhes
     '12.345.678/0001-90',// cnpj
     'Brasil',            // regiao
+    'D+1',               // liquidez
     '1000',              // aporte
     '0',                 // retirada
     '769',               // ganhos
