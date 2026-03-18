@@ -15,6 +15,7 @@ import {
   mockMonthlyByAssetClass,
 } from '@/lib/mock-data'
 import { monthLabel } from '@/lib/utils'
+import { useYear, CURRENT_YEAR } from '@/lib/year-context'
 
 const ALL_INSTITUTION_IDS = ['i1', 'i2', 'i4', 'i5']
 const ALL_CATEGORY_IDS    = ['cat1', 'cat2', 'cat3', 'cat4', 'cat5']
@@ -23,6 +24,7 @@ const LINE_COLORS         = ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#ef444
 const FILTER_INSTITUTIONS = mockInstitutions.filter(i => ALL_INSTITUTION_IDS.includes(i.id))
 
 export default function ConsolidadoMensalPage() {
+  const { selectedYear } = useYear()
   const [selInstitutions, setSelInstitutions] = useState<string[]>(ALL_INSTITUTION_IDS)
   const [selCategories,   setSelCategories]   = useState<string[]>(ALL_CATEGORY_IDS)
 
@@ -52,7 +54,12 @@ export default function ConsolidadoMensalPage() {
     )
   }
 
-  const months = mockDashboard.monthlyEvolution.map(m => ({ month: m.month, year: m.year }))
+  const months = useMemo(() => {
+    if (selectedYear === CURRENT_YEAR) {
+      return mockDashboard.monthlyEvolution.map(m => ({ month: m.month, year: m.year }))
+    }
+    return Array.from({ length: 12 }, (_, i) => ({ month: i + 1, year: selectedYear }))
+  }, [selectedYear])
 
   // ── Tabela: somar por instituições selecionadas ───────────────────
   const tableRows = useMemo<MonthlyTableRow[]>(() => {
@@ -123,7 +130,9 @@ export default function ConsolidadoMensalPage() {
           Consolidado Mensal
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Últimos 12 meses por instituição e categoria
+          {selectedYear === CURRENT_YEAR
+            ? 'Últimos 12 meses por instituição e categoria'
+            : `Janeiro a Dezembro de ${selectedYear}`}
         </p>
       </div>
 

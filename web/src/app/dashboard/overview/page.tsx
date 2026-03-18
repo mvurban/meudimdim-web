@@ -1,19 +1,15 @@
 'use client'
 
+import { useMemo } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard } from '@/components/dashboard/KpiCard'
 import { LineChartCard } from '@/components/dashboard/LineChartCard'
 import { PizzaCard } from '@/components/dashboard/PizzaCard'
-import { mockDashboard } from '@/lib/mock-data'
+import { mockDashboard, mockYearSnapshots } from '@/lib/mock-data'
 import { formatBRL, formatUSD, formatPct, monthLabel } from '@/lib/utils'
+import { useYear, CURRENT_YEAR, CURRENT_MONTH } from '@/lib/year-context'
 
 const INSTITUTION_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7']
-
-const evolutionData = mockDashboard.monthlyEvolution.map(m => ({
-  label: monthLabel(m.month, m.year, true),
-  brl: m.totalValue,
-  usd: m.totalValueUsd,
-}))
 
 const evolutionLines = [
   { key: 'brl', name: 'BRL', color: '#22c55e', yAxisId: 'primary' },
@@ -23,7 +19,19 @@ const evolutionLines = [
 const evolutionSecondaryAxis = { id: 'usd', currency: 'usd' as const }
 
 export default function OverviewPage() {
-  const d = mockDashboard
+  const { selectedYear } = useYear()
+  const d = selectedYear === CURRENT_YEAR ? mockDashboard : mockYearSnapshots[selectedYear]
+
+  const refMonth = selectedYear === CURRENT_YEAR ? CURRENT_MONTH : 12
+  const refLabel = monthLabel(refMonth, selectedYear, true)
+
+  const evolutionData = useMemo(() =>
+    d.monthlyEvolution.map(m => ({
+      label: monthLabel(m.month, m.year, true),
+      brl: m.totalValue,
+      usd: m.totalValueUsd,
+    })),
+  [d])
 
   const categoryData = d.byCategory
     .filter(x => x.value > 0)
@@ -50,7 +58,7 @@ export default function OverviewPage() {
           Dashboard
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Visão geral do patrimônio · {monthLabel(d.selectedMonth, d.selectedYear, true)}
+          Visão geral do patrimônio · {refLabel}
         </p>
       </div>
 

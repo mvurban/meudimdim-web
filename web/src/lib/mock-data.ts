@@ -321,6 +321,94 @@ export const mockDashboard: DashboardData = {
 }
 
 // ─────────────────────────────────────────────
+// YEAR SNAPSHOTS — Overview para anos anteriores
+// ─────────────────────────────────────────────
+export const mockYearSnapshots: Record<number, DashboardData> = {
+  2024: {
+    selectedMonth: 12,
+    selectedYear: 2024,
+    totalValue: 260000,
+    totalValueUsd: 52000,
+    monthContribution: 3500,
+    monthWithdrawal: 0,
+    monthIncome: 2200,
+    monthReturnPct: 0.86,
+    byCategory: [
+      { category: 'Renda Fixa',     value:  98800, pct: 38.0, color: '#22c55e' },
+      { category: 'Renda Variável', value:  83200, pct: 32.0, color: '#f59e0b' },
+      { category: 'Internacional',  value:  46800, pct: 18.0, color: '#a855f7' },
+      { category: 'Multimercado',   value:  31200, pct: 12.0, color: '#3b82f6' },
+      { category: 'Commodities',    value:      0, pct:  0.0, color: '#ef4444' },
+    ],
+    byInstitution: [
+      { institution: 'XP Investimentos', value: 119600, pct: 46.0 },
+      { institution: 'Clear Corretora',  value:  52000, pct: 20.0 },
+      { institution: 'Avenue',           value:  46800, pct: 18.0 },
+      { institution: 'Itaú',             value:  41600, pct: 16.0 },
+    ],
+    byRegion: [
+      { region: 'Brasil',        value: 213200, pct: 82.0 },
+      { region: 'Internacional', value:  46800, pct: 18.0 },
+    ],
+    monthlyEvolution: [
+      { month:  1, year: 2024, totalValue: 220000, totalValueUsd: 44000, totalContribution: 3000, totalWithdrawal: 0, totalIncome: 1800, returnPct: 0.82 },
+      { month:  2, year: 2024, totalValue: 224500, totalValueUsd: 44900, totalContribution: 3000, totalWithdrawal: 0, totalIncome: 1840, returnPct: 0.83 },
+      { month:  3, year: 2024, totalValue: 229000, totalValueUsd: 45800, totalContribution: 3000, totalWithdrawal: 0, totalIncome: 1860, returnPct: 0.83 },
+      { month:  4, year: 2024, totalValue: 233500, totalValueUsd: 46700, totalContribution: 3000, totalWithdrawal: 0, totalIncome: 1880, returnPct: 0.82 },
+      { month:  5, year: 2024, totalValue: 237500, totalValueUsd: 47500, totalContribution: 2500, totalWithdrawal: 0, totalIncome: 1910, returnPct: 0.82 },
+      { month:  6, year: 2024, totalValue: 241500, totalValueUsd: 48300, totalContribution: 2500, totalWithdrawal: 0, totalIncome: 1940, returnPct: 0.82 },
+      { month:  7, year: 2024, totalValue: 245500, totalValueUsd: 49100, totalContribution: 2500, totalWithdrawal: 0, totalIncome: 1960, returnPct: 0.81 },
+      { month:  8, year: 2024, totalValue: 249500, totalValueUsd: 49900, totalContribution: 2500, totalWithdrawal: 0, totalIncome: 2000, returnPct: 0.82 },
+      { month:  9, year: 2024, totalValue: 252500, totalValueUsd: 50500, totalContribution: 2000, totalWithdrawal: 0, totalIncome: 2060, returnPct: 0.83 },
+      { month: 10, year: 2024, totalValue: 255000, totalValueUsd: 51000, totalContribution: 2000, totalWithdrawal: 0, totalIncome: 2100, returnPct: 0.84 },
+      { month: 11, year: 2024, totalValue: 257500, totalValueUsd: 51500, totalContribution: 2000, totalWithdrawal: 0, totalIncome: 2150, returnPct: 0.85 },
+      { month: 12, year: 2024, totalValue: 260000, totalValueUsd: 52000, totalContribution: 3500, totalWithdrawal: 0, totalIncome: 2200, returnPct: 0.86 },
+    ],
+  },
+  2025: {
+    selectedMonth: 12,
+    selectedYear: 2025,
+    totalValue: 381500,
+    totalValueUsd: 66812,
+    monthContribution: 5000,
+    monthWithdrawal: 1000,
+    monthIncome: 3850,
+    monthReturnPct: 1.05,
+    byCategory: [
+      { category: 'Renda Fixa',     value: 159100, pct: 41.7, color: '#22c55e' },
+      { category: 'Renda Variável', value: 127400, pct: 33.4, color: '#f59e0b' },
+      { category: 'Internacional',  value:  68900, pct: 18.1, color: '#a855f7' },
+      { category: 'Multimercado',   value:  41400, pct: 10.9, color: '#3b82f6' },
+      { category: 'Commodities',    value:      0, pct:  0.0, color: '#ef4444' },
+    ],
+    byInstitution: [
+      { institution: 'XP Investimentos', value: 175800, pct: 46.1 },
+      { institution: 'Clear Corretora',  value:  76100, pct: 20.0 },
+      { institution: 'Avenue',           value:  68900, pct: 18.1 },
+      { institution: 'Itaú',             value:  60700, pct: 15.9 },
+    ],
+    byRegion: [
+      { region: 'Brasil',        value: 312600, pct: 81.9 },
+      { region: 'Internacional', value:  68900, pct: 18.1 },
+    ],
+    monthlyEvolution: [
+      { month:  1, year: 2025, totalValue: 271000, totalValueUsd: 54521, totalContribution: 5000, totalWithdrawal: 0, totalIncome: 2300, returnPct: 0.87 },
+      { month:  2, year: 2025, totalValue: 282000, totalValueUsd: 55078, totalContribution: 5000, totalWithdrawal: 0, totalIncome: 2450, returnPct: 0.88 },
+      { month:  3, year: 2025, totalValue: 296000, totalValueUsd: 58614, totalContribution: 5000, totalWithdrawal: 0, totalIncome: 2600, returnPct: 0.89 },
+      { month:  4, year: 2025, totalValue: 310000, totalValueUsd: 59847, totalContribution: 4000, totalWithdrawal: 0, totalIncome: 2800, returnPct: 0.91 },
+      { month:  5, year: 2025, totalValue: 318500, totalValueUsd: 61017, totalContribution: 4000, totalWithdrawal: 0, totalIncome: 2900, returnPct: 0.94 },
+      { month:  6, year: 2025, totalValue: 325200, totalValueUsd: 61242, totalContribution: 3500, totalWithdrawal: 0, totalIncome: 3100, returnPct: 0.96 },
+      { month:  7, year: 2025, totalValue: 333800, totalValueUsd: 63257, totalContribution: 4500, totalWithdrawal: 2000, totalIncome: 3200, returnPct: 0.98 },
+      { month:  8, year: 2025, totalValue: 342100, totalValueUsd: 63944, totalContribution: 4000, totalWithdrawal: 0, totalIncome: 3400, returnPct: 1.01 },
+      { month:  9, year: 2025, totalValue: 352400, totalValueUsd: 65259, totalContribution: 5000, totalWithdrawal: 0, totalIncome: 3550, returnPct: 1.04 },
+      { month: 10, year: 2025, totalValue: 361700, totalValueUsd: 65171, totalContribution: 4000, totalWithdrawal: 0, totalIncome: 3620, returnPct: 1.03 },
+      { month: 11, year: 2025, totalValue: 371200, totalValueUsd: 66049, totalContribution: 4500, totalWithdrawal: 0, totalIncome: 3720, returnPct: 1.02 },
+      { month: 12, year: 2025, totalValue: 381500, totalValueUsd: 66812, totalContribution: 5000, totalWithdrawal: 1000, totalIncome: 3850, returnPct: 1.05 },
+    ],
+  },
+}
+
+// ─────────────────────────────────────────────
 // CONSOLIDADO MENSAL — por instituição (12 meses × 4 instituições)
 // Meses: Abr/2025 → Mar/2026  |  i1=XP ~46%, i2=Clear ~20%, i4=Avenue ~18%, i5=Itaú ~16%
 // ─────────────────────────────────────────────
@@ -328,6 +416,81 @@ export const mockMonthlyByInstitution: {
   institutionId: string; month: number; year: number
   contribution: number; withdrawal: number; income: number; returnPct: number; totalValue: number
 }[] = [
+  // ── Jan/2024 (total 220000) ──────────────────────────────────────
+  { institutionId:'i1', month:1, year:2024, contribution:1500, withdrawal:0, income: 900, returnPct:0.80, totalValue:101200 },
+  { institutionId:'i2', month:1, year:2024, contribution: 750, withdrawal:0, income: 360, returnPct:0.74, totalValue: 44000 },
+  { institutionId:'i4', month:1, year:2024, contribution: 500, withdrawal:0, income: 320, returnPct:0.74, totalValue: 39600 },
+  { institutionId:'i5', month:1, year:2024, contribution: 500, withdrawal:0, income: 340, returnPct:0.84, totalValue: 35200 },
+  // ── Fev/2024 (total 224500) ──────────────────────────────────────
+  { institutionId:'i1', month:2, year:2024, contribution:1500, withdrawal:0, income: 920, returnPct:0.81, totalValue:103270 },
+  { institutionId:'i2', month:2, year:2024, contribution: 750, withdrawal:0, income: 370, returnPct:0.76, totalValue: 44900 },
+  { institutionId:'i4', month:2, year:2024, contribution: 500, withdrawal:0, income: 330, returnPct:0.76, totalValue: 40410 },
+  { institutionId:'i5', month:2, year:2024, contribution: 500, withdrawal:0, income: 350, returnPct:0.86, totalValue: 35920 },
+  // ── Mar/2024 (total 229000) ──────────────────────────────────────
+  { institutionId:'i1', month:3, year:2024, contribution:1500, withdrawal:0, income: 940, returnPct:0.82, totalValue:105340 },
+  { institutionId:'i2', month:3, year:2024, contribution: 750, withdrawal:0, income: 380, returnPct:0.77, totalValue: 45800 },
+  { institutionId:'i4', month:3, year:2024, contribution: 500, withdrawal:0, income: 340, returnPct:0.77, totalValue: 41220 },
+  { institutionId:'i5', month:3, year:2024, contribution: 500, withdrawal:0, income: 360, returnPct:0.88, totalValue: 36640 },
+  // ── Abr/2024 (total 233500) ──────────────────────────────────────
+  { institutionId:'i1', month:4, year:2024, contribution:1500, withdrawal:0, income: 960, returnPct:0.82, totalValue:107410 },
+  { institutionId:'i2', month:4, year:2024, contribution: 750, withdrawal:0, income: 385, returnPct:0.77, totalValue: 46700 },
+  { institutionId:'i4', month:4, year:2024, contribution: 500, withdrawal:0, income: 345, returnPct:0.77, totalValue: 42030 },
+  { institutionId:'i5', month:4, year:2024, contribution: 500, withdrawal:0, income: 365, returnPct:0.88, totalValue: 37360 },
+  // ── Mai/2024 (total 237500) ──────────────────────────────────────
+  { institutionId:'i1', month:5, year:2024, contribution:1250, withdrawal:0, income: 980, returnPct:0.82, totalValue:109250 },
+  { institutionId:'i2', month:5, year:2024, contribution: 625, withdrawal:0, income: 390, returnPct:0.78, totalValue: 47500 },
+  { institutionId:'i4', month:5, year:2024, contribution: 375, withdrawal:0, income: 350, returnPct:0.78, totalValue: 42750 },
+  { institutionId:'i5', month:5, year:2024, contribution: 375, withdrawal:0, income: 370, returnPct:0.89, totalValue: 38000 },
+  // ── Jun/2024 (total 241500) ──────────────────────────────────────
+  { institutionId:'i1', month:6, year:2024, contribution:1250, withdrawal:0, income: 995, returnPct:0.82, totalValue:111090 },
+  { institutionId:'i2', month:6, year:2024, contribution: 625, withdrawal:0, income: 398, returnPct:0.78, totalValue: 48300 },
+  { institutionId:'i4', month:6, year:2024, contribution: 375, withdrawal:0, income: 355, returnPct:0.78, totalValue: 43470 },
+  { institutionId:'i5', month:6, year:2024, contribution: 375, withdrawal:0, income: 376, returnPct:0.89, totalValue: 38640 },
+  // ── Jul/2024 (total 245500) ──────────────────────────────────────
+  { institutionId:'i1', month:7, year:2024, contribution:1250, withdrawal:0, income:1010, returnPct:0.83, totalValue:112930 },
+  { institutionId:'i2', month:7, year:2024, contribution: 625, withdrawal:0, income: 404, returnPct:0.79, totalValue: 49100 },
+  { institutionId:'i4', month:7, year:2024, contribution: 375, withdrawal:0, income: 360, returnPct:0.79, totalValue: 44190 },
+  { institutionId:'i5', month:7, year:2024, contribution: 375, withdrawal:0, income: 382, returnPct:0.89, totalValue: 39280 },
+  // ── Ago/2024 (total 249500) ──────────────────────────────────────
+  { institutionId:'i1', month:8, year:2024, contribution:1250, withdrawal:0, income:1025, returnPct:0.83, totalValue:114770 },
+  { institutionId:'i2', month:8, year:2024, contribution: 625, withdrawal:0, income: 410, returnPct:0.79, totalValue: 49900 },
+  { institutionId:'i4', month:8, year:2024, contribution: 375, withdrawal:0, income: 366, returnPct:0.79, totalValue: 44910 },
+  { institutionId:'i5', month:8, year:2024, contribution: 375, withdrawal:0, income: 388, returnPct:0.90, totalValue: 39920 },
+  // ── Set/2024 (total 252500) ──────────────────────────────────────
+  { institutionId:'i1', month:9, year:2024, contribution:1000, withdrawal:0, income:1040, returnPct:0.83, totalValue:116150 },
+  { institutionId:'i2', month:9, year:2024, contribution: 500, withdrawal:0, income: 416, returnPct:0.80, totalValue: 50500 },
+  { institutionId:'i4', month:9, year:2024, contribution: 250, withdrawal:0, income: 371, returnPct:0.80, totalValue: 45450 },
+  { institutionId:'i5', month:9, year:2024, contribution: 250, withdrawal:0, income: 393, returnPct:0.90, totalValue: 40400 },
+  // ── Out/2024 (total 255000) ──────────────────────────────────────
+  { institutionId:'i1', month:10,year:2024, contribution:1000, withdrawal:0, income:1055, returnPct:0.84, totalValue:117300 },
+  { institutionId:'i2', month:10,year:2024, contribution: 500, withdrawal:0, income: 422, returnPct:0.80, totalValue: 51000 },
+  { institutionId:'i4', month:10,year:2024, contribution: 250, withdrawal:0, income: 376, returnPct:0.80, totalValue: 45900 },
+  { institutionId:'i5', month:10,year:2024, contribution: 250, withdrawal:0, income: 398, returnPct:0.90, totalValue: 40800 },
+  // ── Nov/2024 (total 257500) ──────────────────────────────────────
+  { institutionId:'i1', month:11,year:2024, contribution:1000, withdrawal:0, income:1070, returnPct:0.85, totalValue:118450 },
+  { institutionId:'i2', month:11,year:2024, contribution: 500, withdrawal:0, income: 428, returnPct:0.81, totalValue: 51500 },
+  { institutionId:'i4', month:11,year:2024, contribution: 250, withdrawal:0, income: 381, returnPct:0.81, totalValue: 46350 },
+  { institutionId:'i5', month:11,year:2024, contribution: 250, withdrawal:0, income: 403, returnPct:0.91, totalValue: 41200 },
+  // ── Dez/2024 (total 260000) ──────────────────────────────────────
+  { institutionId:'i1', month:12,year:2024, contribution:1750, withdrawal:0, income:1090, returnPct:0.86, totalValue:119600 },
+  { institutionId:'i2', month:12,year:2024, contribution: 875, withdrawal:0, income: 436, returnPct:0.82, totalValue: 52000 },
+  { institutionId:'i4', month:12,year:2024, contribution: 525, withdrawal:0, income: 388, returnPct:0.82, totalValue: 46800 },
+  { institutionId:'i5', month:12,year:2024, contribution: 525, withdrawal:0, income: 410, returnPct:0.92, totalValue: 41600 },
+  // ── Jan/2025 (total 271000) ──────────────────────────────────────
+  { institutionId:'i1', month:1, year:2025, contribution:2500, withdrawal:0, income:1060, returnPct:0.85, totalValue:125000 },
+  { institutionId:'i2', month:1, year:2025, contribution:1250, withdrawal:0, income: 426, returnPct:0.80, totalValue: 54200 },
+  { institutionId:'i4', month:1, year:2025, contribution: 750, withdrawal:0, income: 380, returnPct:0.80, totalValue: 49000 },
+  { institutionId:'i5', month:1, year:2025, contribution: 750, withdrawal:0, income: 402, returnPct:0.90, totalValue: 42800 },
+  // ── Fev/2025 (total 282000) ──────────────────────────────────────
+  { institutionId:'i1', month:2, year:2025, contribution:2500, withdrawal:0, income:1130, returnPct:0.87, totalValue:130000 },
+  { institutionId:'i2', month:2, year:2025, contribution:1250, withdrawal:0, income: 452, returnPct:0.82, totalValue: 56500 },
+  { institutionId:'i4', month:2, year:2025, contribution: 750, withdrawal:0, income: 404, returnPct:0.83, totalValue: 51000 },
+  { institutionId:'i5', month:2, year:2025, contribution: 750, withdrawal:0, income: 427, returnPct:0.93, totalValue: 44500 },
+  // ── Mar/2025 (total 296000) ──────────────────────────────────────
+  { institutionId:'i1', month:3, year:2025, contribution:2500, withdrawal:0, income:1185, returnPct:0.88, totalValue:136500 },
+  { institutionId:'i2', month:3, year:2025, contribution:1250, withdrawal:0, income: 476, returnPct:0.85, totalValue: 59200 },
+  { institutionId:'i4', month:3, year:2025, contribution: 750, withdrawal:0, income: 427, returnPct:0.86, totalValue: 53600 },
+  { institutionId:'i5', month:3, year:2025, contribution: 750, withdrawal:0, income: 453, returnPct:0.97, totalValue: 46700 },
   // ── Abr/2025 (total 310000) ──────────────────────────────────────
   { institutionId:'i1', month:4, year:2025, contribution:2000, withdrawal:0, income:1200, returnPct:0.89, totalValue:143000 },
   { institutionId:'i2', month:4, year:2025, contribution:1000, withdrawal:0, income: 560, returnPct:0.82, totalValue: 62000 },
@@ -398,6 +561,111 @@ export const mockMonthlyByInstitution: {
 export const mockMonthlyByAssetClass: {
   assetClassId: string; month: number; year: number; totalValue: number
 }[] = [
+  // Jan/2024
+  { assetClassId:'ac1', month:1, year:2024, totalValue: 62000 },
+  { assetClassId:'ac2', month:1, year:2024, totalValue: 36800 },
+  { assetClassId:'ac5', month:1, year:2024, totalValue: 22000 },
+  { assetClassId:'ac6', month:1, year:2024, totalValue: 44000 },
+  { assetClassId:'ac7', month:1, year:2024, totalValue: 35600 },
+  { assetClassId:'ac9', month:1, year:2024, totalValue: 39600 },
+  // Fev/2024
+  { assetClassId:'ac1', month:2, year:2024, totalValue: 63200 },
+  { assetClassId:'ac2', month:2, year:2024, totalValue: 37600 },
+  { assetClassId:'ac5', month:2, year:2024, totalValue: 22600 },
+  { assetClassId:'ac6', month:2, year:2024, totalValue: 45000 },
+  { assetClassId:'ac7', month:2, year:2024, totalValue: 36200 },
+  { assetClassId:'ac9', month:2, year:2024, totalValue: 39900 },
+  // Mar/2024
+  { assetClassId:'ac1', month:3, year:2024, totalValue: 64500 },
+  { assetClassId:'ac2', month:3, year:2024, totalValue: 38400 },
+  { assetClassId:'ac5', month:3, year:2024, totalValue: 23200 },
+  { assetClassId:'ac6', month:3, year:2024, totalValue: 46000 },
+  { assetClassId:'ac7', month:3, year:2024, totalValue: 36900 },
+  { assetClassId:'ac9', month:3, year:2024, totalValue: 40000 },
+  // Abr/2024
+  { assetClassId:'ac1', month:4, year:2024, totalValue: 65800 },
+  { assetClassId:'ac2', month:4, year:2024, totalValue: 39200 },
+  { assetClassId:'ac5', month:4, year:2024, totalValue: 23800 },
+  { assetClassId:'ac6', month:4, year:2024, totalValue: 47000 },
+  { assetClassId:'ac7', month:4, year:2024, totalValue: 37600 },
+  { assetClassId:'ac9', month:4, year:2024, totalValue: 40100 },
+  // Mai/2024
+  { assetClassId:'ac1', month:5, year:2024, totalValue: 67000 },
+  { assetClassId:'ac2', month:5, year:2024, totalValue: 39900 },
+  { assetClassId:'ac5', month:5, year:2024, totalValue: 24300 },
+  { assetClassId:'ac6', month:5, year:2024, totalValue: 47900 },
+  { assetClassId:'ac7', month:5, year:2024, totalValue: 38300 },
+  { assetClassId:'ac9', month:5, year:2024, totalValue: 40100 },
+  // Jun/2024
+  { assetClassId:'ac1', month:6, year:2024, totalValue: 68200 },
+  { assetClassId:'ac2', month:6, year:2024, totalValue: 40600 },
+  { assetClassId:'ac5', month:6, year:2024, totalValue: 24800 },
+  { assetClassId:'ac6', month:6, year:2024, totalValue: 48800 },
+  { assetClassId:'ac7', month:6, year:2024, totalValue: 39000 },
+  { assetClassId:'ac9', month:6, year:2024, totalValue: 40100 },
+  // Jul/2024
+  { assetClassId:'ac1', month:7, year:2024, totalValue: 69400 },
+  { assetClassId:'ac2', month:7, year:2024, totalValue: 41300 },
+  { assetClassId:'ac5', month:7, year:2024, totalValue: 25400 },
+  { assetClassId:'ac6', month:7, year:2024, totalValue: 49700 },
+  { assetClassId:'ac7', month:7, year:2024, totalValue: 39700 },
+  { assetClassId:'ac9', month:7, year:2024, totalValue: 40000 },
+  // Ago/2024
+  { assetClassId:'ac1', month:8, year:2024, totalValue: 70600 },
+  { assetClassId:'ac2', month:8, year:2024, totalValue: 42000 },
+  { assetClassId:'ac5', month:8, year:2024, totalValue: 25900 },
+  { assetClassId:'ac6', month:8, year:2024, totalValue: 50600 },
+  { assetClassId:'ac7', month:8, year:2024, totalValue: 40400 },
+  { assetClassId:'ac9', month:8, year:2024, totalValue: 39990 },
+  // Set/2024
+  { assetClassId:'ac1', month:9, year:2024, totalValue: 71500 },
+  { assetClassId:'ac2', month:9, year:2024, totalValue: 42500 },
+  { assetClassId:'ac5', month:9, year:2024, totalValue: 26300 },
+  { assetClassId:'ac6', month:9, year:2024, totalValue: 51200 },
+  { assetClassId:'ac7', month:9, year:2024, totalValue: 40900 },
+  { assetClassId:'ac9', month:9, year:2024, totalValue: 40100 },
+  // Out/2024
+  { assetClassId:'ac1', month:10,year:2024, totalValue: 72500 },
+  { assetClassId:'ac2', month:10,year:2024, totalValue: 43000 },
+  { assetClassId:'ac5', month:10,year:2024, totalValue: 26600 },
+  { assetClassId:'ac6', month:10,year:2024, totalValue: 51900 },
+  { assetClassId:'ac7', month:10,year:2024, totalValue: 41400 },
+  { assetClassId:'ac9', month:10,year:2024, totalValue: 39600 },
+  // Nov/2024
+  { assetClassId:'ac1', month:11,year:2024, totalValue: 73500 },
+  { assetClassId:'ac2', month:11,year:2024, totalValue: 43500 },
+  { assetClassId:'ac5', month:11,year:2024, totalValue: 27000 },
+  { assetClassId:'ac6', month:11,year:2024, totalValue: 52500 },
+  { assetClassId:'ac7', month:11,year:2024, totalValue: 41900 },
+  { assetClassId:'ac9', month:11,year:2024, totalValue: 39100 },
+  // Dez/2024
+  { assetClassId:'ac1', month:12,year:2024, totalValue: 74700 },
+  { assetClassId:'ac2', month:12,year:2024, totalValue: 44100 },
+  { assetClassId:'ac5', month:12,year:2024, totalValue: 27500 },
+  { assetClassId:'ac6', month:12,year:2024, totalValue: 53400 },
+  { assetClassId:'ac7', month:12,year:2024, totalValue: 42500 },
+  { assetClassId:'ac9', month:12,year:2024, totalValue: 37800 },
+  // Jan/2025
+  { assetClassId:'ac1', month:1, year:2025, totalValue: 76500 },
+  { assetClassId:'ac2', month:1, year:2025, totalValue: 45200 },
+  { assetClassId:'ac5', month:1, year:2025, totalValue: 28500 },
+  { assetClassId:'ac6', month:1, year:2025, totalValue: 55000 },
+  { assetClassId:'ac7', month:1, year:2025, totalValue: 43200 },
+  { assetClassId:'ac9', month:1, year:2025, totalValue: 42600 },
+  // Fev/2025
+  { assetClassId:'ac1', month:2, year:2025, totalValue: 78000 },
+  { assetClassId:'ac2', month:2, year:2025, totalValue: 46400 },
+  { assetClassId:'ac5', month:2, year:2025, totalValue: 29500 },
+  { assetClassId:'ac6', month:2, year:2025, totalValue: 56800 },
+  { assetClassId:'ac7', month:2, year:2025, totalValue: 44500 },
+  { assetClassId:'ac9', month:2, year:2025, totalValue: 46800 },
+  // Mar/2025
+  { assetClassId:'ac1', month:3, year:2025, totalValue: 80000 },
+  { assetClassId:'ac2', month:3, year:2025, totalValue: 47500 },
+  { assetClassId:'ac5', month:3, year:2025, totalValue: 30900 },
+  { assetClassId:'ac6', month:3, year:2025, totalValue: 58700 },
+  { assetClassId:'ac7', month:3, year:2025, totalValue: 45900 },
+  { assetClassId:'ac9', month:3, year:2025, totalValue: 53000 },
   // Abr/2025
   { assetClassId:'ac1', month:4, year:2025, totalValue: 82000 },
   { assetClassId:'ac2', month:4, year:2025, totalValue: 48000 },

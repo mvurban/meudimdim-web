@@ -1,8 +1,6 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { useTheme } from '@/lib/theme-context'
-
 const FEATURES = [
   { icon: '◈', text: 'Snapshots mensais de cada produto financeiro' },
   { icon: '◉', text: 'Cotações de ações em tempo real via Yahoo Finance' },
@@ -11,8 +9,6 @@ const FEATURES = [
 ]
 
 export default function LoginPage() {
-  const { theme, toggleTheme } = useTheme()
-
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── LEFT PANEL (always dark) ── */}
@@ -80,6 +76,9 @@ export default function LoginPage() {
             <p style={{ fontSize: 15, fontWeight: 300, color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, maxWidth: 420 }}>
               Registre e acompanhe cada investimento, mês a mês. Snapshots manuais, visão consolidada e sem complicação.
             </p>
+            <p style={{ fontSize: 15, fontWeight: 300, color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, maxWidth: 420, marginTop: 8 }}>
+              100% grátis, sem pegadinhas.
+            </p>
 
             {/* Asset class pills */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
@@ -144,39 +143,25 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
+
+            {/* Social proof */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
+              <span style={{ color: '#22c55e', fontSize: 16, lineHeight: 1 }}>*</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
+                9.452 usuários já utilizam o MeuDimDim
+              </span>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div style={{ display: 'flex', gap: 28, paddingTop: 8 }}>
-            {[
-              { v: '12+',      l: 'tipos de produto' },
-              { v: 'BRL/USD',  l: 'multi-moeda' },
-              { v: '100%',     l: 'seus dados' },
-            ].map((s, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#fff' }}>{s.v}</span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.4 }}>{s.l}</span>
-              </div>
-            ))}
-          </div>
+          <div />
         </div>
       </div>
 
       {/* ── RIGHT PANEL ── */}
       <div
         className="flex flex-1 flex-col items-center justify-center px-8 py-12 relative"
-        style={{ background: 'var(--bg-surface)' }}
+        style={{ background: '#9da5a0' }}
       >
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-[9px] text-sm transition-all"
-          style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-          title="Alternar tema"
-        >
-          {theme === 'dark' ? '☀' : '☾'}
-        </button>
-
         <div style={{ width: '100%', maxWidth: 360 }}>
 
           {/* Mobile logo */}
@@ -187,7 +172,7 @@ export default function LoginPage() {
                 <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#0f1714' }}>
               Meu<span style={{ color: '#22c55e' }}>DimDim</span>
             </span>
           </div>
@@ -198,31 +183,31 @@ export default function LoginPage() {
               fontSize: 26,
               fontWeight: 800,
               letterSpacing: '-0.5px',
-              color: 'var(--text-primary)',
+              color: '#0f1714',
               marginBottom: 6,
             }}
           >
             Boas-vindas
           </h2>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 28, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 14, color: '#1e2b25', marginBottom: 28, lineHeight: 1.6 }}>
             Entre com sua conta Google para acessar seu painel financeiro.
           </p>
 
           {/* Feature list */}
           <ul style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
             {FEATURES.map(f => (
-              <li key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: 'var(--text-secondary)' }}>
+              <li key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: '#1e2b25' }}>
                 <span
                   style={{
                     width: 18, height: 18, borderRadius: '50%',
-                    border: '1.5px solid #22c55e',
-                    background: 'rgba(34,197,94,0.08)',
+                    border: '1.5px solid rgba(0,0,0,0.25)',
+                    background: 'rgba(0,0,0,0.12)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                   }}
                 >
                   <svg width="9" height="9" viewBox="0 0 12 12">
-                    <polyline points="2,6 5,9 10,3" fill="none" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="2,6 5,9 10,3" fill="none" stroke="#0f1714" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>
                 {f.text}
@@ -237,9 +222,9 @@ export default function LoginPage() {
             style={{
               padding: '13px 20px',
               borderRadius: 12,
-              border: '1.5px solid var(--border)',
-              background: 'var(--bg-surface)',
-              color: 'var(--text-primary)',
+              border: '1.5px solid rgba(255,255,255,0.5)',
+              background: '#fff',
+              color: '#111827',
               fontSize: 15,
               fontWeight: 500,
               cursor: 'pointer',
@@ -247,12 +232,12 @@ export default function LoginPage() {
             onMouseEnter={e => {
               const el = e.currentTarget
               el.style.borderColor = '#22c55e'
-              el.style.boxShadow = '0 4px 16px rgba(34,197,94,0.15)'
+              el.style.boxShadow = '0 4px 16px rgba(34,197,94,0.2)'
               el.style.transform = 'translateY(-1px)'
             }}
             onMouseLeave={e => {
               const el = e.currentTarget
-              el.style.borderColor = 'var(--border)'
+              el.style.borderColor = 'rgba(255,255,255,0.5)'
               el.style.boxShadow = 'none'
               el.style.transform = 'translateY(0)'
             }}
@@ -266,15 +251,15 @@ export default function LoginPage() {
             Entrar com Google
           </button>
 
-          <p style={{ marginTop: 20, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
+          <p style={{ marginTop: 20, fontSize: 12, color: '#3a4d46', textAlign: 'center', lineHeight: 1.6 }}>
             Ao entrar, você concorda com os{' '}
-            <a href="#" style={{ color: '#22c55e', textDecoration: 'none' }}>Termos de uso</a>
+            <a href="#" style={{ color: '#fff', textDecoration: 'underline' }}>Termos de uso</a>
             {' '}e{' '}
-            <a href="#" style={{ color: '#22c55e', textDecoration: 'none' }}>Política de privacidade</a>.
+            <a href="#" style={{ color: '#fff', textDecoration: 'underline' }}>Política de privacidade</a>.
           </p>
         </div>
 
-        <p style={{ position: 'absolute', bottom: 20, fontSize: 12, color: 'var(--text-muted)' }}>
+        <p style={{ position: 'absolute', bottom: 20, fontSize: 12, color: '#3a4d46' }}>
           MeuDimDim © {new Date().getFullYear()}
         </p>
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { MonthSelector } from '@/components/produtos/MonthSelector'
 import { FilterBar } from '@/components/produtos/FilterBar'
@@ -16,6 +16,7 @@ import {
   mockInstitutions,
 } from '@/lib/mock-data'
 import type { Product, ProductEntry, Category } from '@/types'
+import { useYear, CURRENT_YEAR, CURRENT_MONTH } from '@/lib/year-context'
 
 type ModalState =
   | { open: false }
@@ -23,8 +24,14 @@ type ModalState =
   | { open: true; mode: 'edit'; productId: string }
 
 export default function ProdutosPage() {
-  const [selectedMonth, setSelectedMonth] = useState(3)
-  const [selectedYear] = useState(2026)
+  const { selectedYear } = useYear()
+  const [selectedMonth, setSelectedMonth] = useState(
+    selectedYear === CURRENT_YEAR ? CURRENT_MONTH : 12
+  )
+
+  useEffect(() => {
+    setSelectedMonth(selectedYear === CURRENT_YEAR ? CURRENT_MONTH : 12)
+  }, [selectedYear])
   const [categoryFilter, setCategoryFilter] = useState('')
   const [institutionFilter, setInstitutionFilter] = useState('')
   const [products, setProducts] = useState<Product[]>(mockProducts)

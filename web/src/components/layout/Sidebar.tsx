@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { ThemeToggle } from './ThemeToggle'
 import { initUserData } from '@/lib/mock-store'
+import { useYear, AVAILABLE_YEARS } from '@/lib/year-context'
+import { YearSelect } from './YearSelect'
 
 const NAV = [
   { href: '/produtos',  icon: '◈', label: 'Produtos'  },
@@ -28,6 +30,7 @@ const CONFIG_NAV = [
 export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { selectedYear, setSelectedYear } = useYear()
   const [expanded, setExpanded] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = sessionStorage.getItem('sidebar-config-expanded')
@@ -104,12 +107,13 @@ export function Sidebar() {
         </span>
       </div>
 
-      {/* Month selector */}
+      {/* Year selector */}
       <div style={{ padding: '0 12px 12px' }}>
-        <button style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: 'none', color: 'rgba(255,255,255,0.45)', fontSize: 12, cursor: 'pointer' }}>
-          <span>Mar / 2026</span>
-          <span style={{ color: '#22c55e', fontSize: 10 }}>▾</span>
-        </button>
+        <YearSelect
+          value={selectedYear}
+          options={AVAILABLE_YEARS}
+          onChange={setSelectedYear}
+        />
       </div>
 
       {/* Nav */}
