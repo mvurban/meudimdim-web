@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import type { Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { parseCsvImport, generateCsvTemplate } from '@/lib/csv-import'
 import type { ImportResult } from '@/lib/csv-import'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 
 interface ImportModalProps {
   categories: Category[]
@@ -83,6 +84,7 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
   const isLocked = screen === 'importing'
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
@@ -321,5 +323,6 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
