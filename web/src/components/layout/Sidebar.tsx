@@ -8,9 +8,13 @@ import { ThemeToggle } from './ThemeToggle'
 import { initUserData } from '@/lib/mock-store'
 
 const NAV = [
-  { href: '/dashboard', icon: '▣', label: 'Dashboard' },
   { href: '/produtos',  icon: '◈', label: 'Produtos'  },
   { href: '/acoes',     icon: '◉', label: 'Ações'     },
+]
+
+const DASHBOARD_NAV = [
+  { href: '/dashboard/overview',           icon: '▣', label: 'Overview'           },
+  { href: '/dashboard/consolidado-mensal', icon: '◈', label: 'Consolidado Mensal' },
 ]
 
 const CONFIG_NAV = [
@@ -112,6 +116,44 @@ export function Sidebar() {
       <nav style={{ flex: 1, padding: '0 10px', overflowY: 'auto' }}>
         <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', padding: '0 8px', marginBottom: 6 }}>Menu</p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Dashboard — sempre expandido */}
+          <li>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              borderRadius: 8,
+              padding: '9px 10px',
+              fontSize: 13.5,
+              fontWeight: active('/dashboard') ? 500 : 400,
+              color: active('/dashboard') ? '#fff' : 'rgba(255,255,255,0.5)',
+              background: active('/dashboard') ? 'rgba(34,197,94,0.08)' : 'transparent',
+            }}>
+              <span style={{ width: 3, height: 16, borderRadius: 99, flexShrink: 0, background: active('/dashboard') ? '#22c55e' : 'transparent' }} />
+              <span style={{ fontSize: 12, opacity: 0.75 }}>▣</span>
+              <span style={{ flex: 1 }}>Dashboard</span>
+            </div>
+            <ul style={{ listStyle: 'none', padding: '2px 0 2px 22px', margin: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {DASHBOARD_NAV.map(item => {
+                const isActive = active(item.href)
+                return (
+                  <li key={item.href}>
+                    <Link href={item.href} style={{
+                      ...navStyle(item.href),
+                      fontSize: 13,
+                      color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                      background: isActive ? 'rgba(34,197,94,0.12)' : 'transparent',
+                    }}>
+                      <span style={{ width: 3, height: 14, borderRadius: 99, flexShrink: 0, background: isActive ? '#22c55e' : 'transparent' }} />
+                      <span style={{ fontSize: 11, opacity: 0.75, color: isActive ? '#22c55e' : 'inherit' }}>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </li>
+
           {NAV.map(item => (
             <li key={item.href}>
               <Link href={item.href} style={navStyle(item.href)}>

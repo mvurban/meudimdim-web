@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:prod-vista-mes.lovable.app)"
+      "WebFetch(domain:prod-vista-mes.lovable.app)",
+      "Bash(cd:*)"
     ]
   }
 }

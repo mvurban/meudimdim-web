@@ -3,8 +3,10 @@
 import { usePathname } from 'next/navigation'
 
 const LABELS: Record<string, string> = {
-  dashboard:      'Dashboard',
-  produtos:       'Produtos',
+  overview:             'Overview',
+  'consolidado-mensal': 'Consolidado Mensal',
+  dashboard:            'Dashboard',
+  produtos:             'Produtos',
   acoes:          'Ações — Carteira',
   instituicoes:   'Visão por Instituição',
   cotacoes:       'Cotações de Câmbio',
