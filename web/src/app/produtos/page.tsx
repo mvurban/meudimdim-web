@@ -75,9 +75,15 @@ export default function ProdutosPage() {
   }, [filteredEntries, products])
 
   // Stat totals
-  const totalBrl    = filteredEntries.reduce((s, e) => s + e.valueBrl, 0)
-  const totalUsd    = filteredEntries.reduce((s, e) => s + e.valueUsd, 0)
-  const totalIncome = filteredEntries.reduce((s, e) => s + e.income, 0)
+  const totalBrl          = filteredEntries.reduce((s, e) => s + e.valueBrl, 0)
+  const totalUsd          = filteredEntries.reduce((s, e) => s + e.valueUsd, 0)
+  const totalIncome       = filteredEntries.reduce((s, e) => s + e.income, 0)
+  const totalContribution = filteredEntries.reduce((s, e) => s + e.contribution, 0)
+  const totalWithdrawal   = filteredEntries.reduce((s, e) => s + e.withdrawal, 0)
+  const avgReturn         = filteredEntries.length
+    ? filteredEntries.reduce((s, e) => s + e.returnPct, 0) / filteredEntries.length
+    : 0
+  const exchangeRate      = filteredEntries[0]?.exchangeRate ?? 0
 
   // Available categories and institutions based on current month's data
   const availableCategories = useMemo(() => {
@@ -199,7 +205,15 @@ export default function ProdutosPage() {
         </div>
 
         {/* Stat cards */}
-        <StatCards totalBrl={totalBrl} totalUsd={totalUsd} totalIncome={totalIncome} />
+        <StatCards
+          totalBrl={totalBrl}
+          totalUsd={totalUsd}
+          totalIncome={totalIncome}
+          avgReturn={avgReturn}
+          totalContribution={totalContribution}
+          totalWithdrawal={totalWithdrawal}
+          exchangeRate={exchangeRate}
+        />
 
         {/* Filter bar */}
         <div className="flex items-center">

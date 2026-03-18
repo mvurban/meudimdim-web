@@ -48,7 +48,12 @@ export function ProductRow({ entry, product, assetClass, institution, onEdit }: 
       </td>
 
       {/* Rentabilidade */}
-      <td className="value-pos font-medium">{formatPct(entry.returnPct)}</td>
+      <td
+        className="font-medium"
+        style={{ color: entry.returnPct >= 0 ? 'var(--success)' : 'var(--danger)' }}
+      >
+        {formatPct(entry.returnPct)}
+      </td>
 
       {/* Aporte */}
       <td style={{ color: 'var(--text-secondary)' }}>
@@ -56,16 +61,14 @@ export function ProductRow({ entry, product, assetClass, institution, onEdit }: 
       </td>
 
       {/* Retirada */}
-      <td>
-        {entry.withdrawal > 0 ? (
-          <span className="value-neg">{formatBRL(entry.withdrawal)}</span>
-        ) : (
-          <span style={{ color: 'var(--text-muted)' }}>—</span>
-        )}
+      <td style={{ color: 'var(--text-secondary)' }}>
+        {entry.withdrawal > 0 ? formatBRL(entry.withdrawal) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
       </td>
 
       {/* Ganhos */}
-      <td className="value-pos">{formatBRL(entry.income)}</td>
+      <td style={{ color: entry.income >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+        {formatBRL(entry.income)}
+      </td>
 
       {/* Total USD */}
       <td style={{ color: 'var(--text-secondary)' }}>{formatUSD(entry.valueUsd)}</td>

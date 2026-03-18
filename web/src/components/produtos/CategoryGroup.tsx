@@ -19,10 +19,12 @@ export function CategoryGroup({
   institutions,
   onEdit,
 }: CategoryGroupProps) {
-  const totalBrl    = entries.reduce((s, e) => s + e.valueBrl, 0)
-  const totalUsd    = entries.reduce((s, e) => s + e.valueUsd, 0)
-  const totalIncome = entries.reduce((s, e) => s + e.income, 0)
-  const avgReturn   = entries.length
+  const totalBrl          = entries.reduce((s, e) => s + e.valueBrl, 0)
+  const totalUsd          = entries.reduce((s, e) => s + e.valueUsd, 0)
+  const totalIncome       = entries.reduce((s, e) => s + e.income, 0)
+  const totalContribution = entries.reduce((s, e) => s + e.contribution, 0)
+  const totalWithdrawal   = entries.reduce((s, e) => s + e.withdrawal, 0)
+  const avgReturn         = entries.length
     ? entries.reduce((s, e) => s + e.returnPct, 0) / entries.length
     : 0
 
@@ -31,14 +33,15 @@ export function CategoryGroup({
       className="card overflow-hidden"
       style={{ padding: 0, borderLeft: `3px solid ${category.color}` }}
     >
-      {/* Header */}
+      {/* Header — widths mirror the colgroup: 5 / 30 / 8 / 10 / 10 / 10 / 10 / 12 / 4 */}
       <div
-        className="flex items-center justify-between px-5 py-3"
-        style={{ borderBottom: '1px solid var(--border)' }}
+        className="flex items-center py-3"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
       >
-        <div className="flex items-center gap-2">
+        {/* Inst (5%) + Produto (30%) = 35% — category name */}
+        <div className="flex items-center gap-2" style={{ width: '35%', padding: '0 16px' }}>
           <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
+            className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
             style={{ background: category.color }}
           />
           <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -49,47 +52,79 @@ export function CategoryGroup({
           </span>
         </div>
 
-        <div className="flex items-center gap-6 text-sm">
-          <div className="text-right">
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Rent. média</div>
-            <div className="font-medium value-pos">{formatPct(avgReturn)}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Ganhos</div>
-            <div className="font-medium value-pos">{formatBRL(totalIncome)}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>USD</div>
-            <div className="font-medium" style={{ color: 'var(--text-secondary)' }}>
-              {formatUSD(totalUsd)}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Total</div>
-            <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {formatBRL(totalBrl)}
-            </div>
+        {/* Rent. (8%) */}
+        <div className="text-sm" style={{ width: '8%', padding: '0 16px' }}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Rent. média</div>
+          <div
+            className="font-medium"
+            style={{ color: avgReturn >= 0 ? 'var(--success)' : 'var(--danger)' }}
+          >
+            {formatPct(avgReturn)}
           </div>
         </div>
+
+        {/* Aporte (10%) */}
+        <div className="text-sm" style={{ width: '10%', padding: '0 16px' }}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Aporte</div>
+          <div className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {totalContribution > 0 ? formatBRL(totalContribution) : '—'}
+          </div>
+        </div>
+
+        {/* Retirada (10%) */}
+        <div className="text-sm" style={{ width: '10%', padding: '0 16px' }}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Retirada</div>
+          <div className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {totalWithdrawal > 0 ? formatBRL(totalWithdrawal) : '—'}
+          </div>
+        </div>
+
+        {/* Ganhos (10%) */}
+        <div className="text-sm" style={{ width: '10%', padding: '0 16px' }}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Ganhos</div>
+          <div
+            className="font-medium"
+            style={{ color: totalIncome >= 0 ? 'var(--success)' : 'var(--danger)' }}
+          >
+            {formatBRL(totalIncome)}
+          </div>
+        </div>
+
+        {/* Total USD (10%) */}
+        <div className="text-sm" style={{ width: '10%', padding: '0 16px' }}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>USD</div>
+          <div className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {formatUSD(totalUsd)}
+          </div>
+        </div>
+
+        {/* Total BRL (12%) */}
+        <div className="text-sm" style={{ width: '12%', padding: '0 16px' }}>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Total</div>
+          <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {formatBRL(totalBrl)}
+          </div>
+        </div>
+
+        {/* Ação (4%) — vazio */}
+        <div style={{ width: '4%' }} />
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="table-auto w-full">
-          <thead>
-            <tr>
-              <th style={{ width: 48 }}>Inst.</th>
-              <th>Produto</th>
-              <th>Rent.</th>
-              <th>Aporte</th>
-              <th>Retirada</th>
-              <th>Ganhos</th>
-              <th>Total USD</th>
-              <th>Total BRL</th>
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
+        <table className="table-auto w-full table-fixed">
+          <colgroup>
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '4%' }} />
+          </colgroup>
+<tbody>
             {entries.map(entry => {
               const product     = products.find(p => p.id === entry.productId)
               const assetClass  = product ? assetClasses.find(a => a.id === product.assetClassId) : undefined

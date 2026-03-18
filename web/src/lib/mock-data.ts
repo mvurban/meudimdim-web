@@ -211,15 +211,15 @@ export const mockEntries: ProductEntry[] = [
   // p3 — Fundo Multimercado XP
   {
     id: 'e5', productId: 'p3', month: 3, year: 2026,
-    contribution: 2000, withdrawal: 0, returnPct: 0.72,
-    income: 311, valueOriginal: 43200, valueBrl: 43200, valueUsd: 7408,
+    contribution: 0, withdrawal: 5000, returnPct: -0.48,
+    income: -207, valueOriginal: 43200, valueBrl: 43200, valueUsd: 7408,
     valueFinal: 43200, exchangeRate: 5.83, createdAt: '2026-03-31',
   },
   // p4 — Ações Clear
   {
     id: 'e6', productId: 'p4', month: 3, year: 2026,
-    contribution: 0, withdrawal: 0, returnPct: 2.30,
-    income: 1806, valueOriginal: 78500, valueBrl: 78500, valueUsd: 13470,
+    contribution: 0, withdrawal: 3200, returnPct: -1.87,
+    income: -1468, valueOriginal: 78500, valueBrl: 78500, valueUsd: 13470,
     valueFinal: 78500, exchangeRate: 5.83, createdAt: '2026-03-31',
   },
   // p5 — VNQ Real Estate ETF
@@ -232,8 +232,8 @@ export const mockEntries: ProductEntry[] = [
   // p6 — HGLG11 FII Logística
   {
     id: 'e8', productId: 'p6', month: 3, year: 2026,
-    contribution: 0, withdrawal: 0, returnPct: 1.59,
-    income: 877, valueOriginal: 55200, valueBrl: 55200, valueUsd: 9469,
+    contribution: 0, withdrawal: 1500, returnPct: -0.31,
+    income: -171, valueOriginal: 55200, valueBrl: 55200, valueUsd: 9469,
     valueFinal: 55200, exchangeRate: 5.83, createdAt: '2026-03-31',
   },
 ]
