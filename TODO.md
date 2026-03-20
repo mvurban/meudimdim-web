@@ -143,6 +143,7 @@ Por que não hardcodar IDs:
 - Categorias e classes de ativo são per-user e podem ser deletadas pelo usuário
 - Pré-selecionar por nome ("Renda Variável", "Ações") é mais robusto que por ID
 - Se não encontrar, usuário escolhe explicitamente — sem quebra silenciosa
+- Importante ser desse jeito porque o produto pode ser um etf internacional, que pode ter a categoria internacional, fiis e bdrs.
 
 6.  src/components/produtos/CategoryGroup.tsx ou página
 
