@@ -1,4 +1,4 @@
-import type { Category, AssetClass, Institution, Region, LiquidityOption, Dividend, BenchmarkEntry } from '@/types'
+import type { Category, AssetClass, Institution, Region, LiquidityOption, Dividend, BenchmarkEntry, StockDividend } from '@/types'
 import { mockCategories, mockAssetClasses, mockInstitutions, mockRegions, mockLiquidityOptions, mockDividends, mockBenchmarks } from './mock-data'
 
 // ─────────────────────────────────────────────
@@ -148,6 +148,15 @@ export function getAcoes(email: string): AcaoItem[] {
 
 export function setAcoes(email: string, items: AcaoItem[]): void {
   localStorage.setItem(key(email, 'acoes'), JSON.stringify(items))
+}
+
+export function getStockDividends(email: string): StockDividend[] {
+  const d = localStorage.getItem(key(email, 'stock_dividends'))
+  return d ? JSON.parse(d) : []
+}
+
+export function setStockDividends(email: string, items: StockDividend[]): void {
+  localStorage.setItem(key(email, 'stock_dividends'), JSON.stringify(items))
 }
 
 export function deleteUserData(email: string): void {

@@ -16,9 +16,11 @@ interface YearSelectProps {
   value: number
   options: number[]
   onChange: (year: number) => void
+  fontSize?: number
+  triggerStyle?: React.CSSProperties
 }
 
-export function YearSelect({ value, options, onChange }: YearSelectProps) {
+export function YearSelect({ value, options, onChange, fontSize = 13, triggerStyle }: YearSelectProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -33,7 +35,7 @@ export function YearSelect({ value, options, onChange }: YearSelectProps) {
   }, [open])
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       {/* Trigger */}
       <button
         onClick={() => setOpen(v => !v)}
@@ -47,8 +49,10 @@ export function YearSelect({ value, options, onChange }: YearSelectProps) {
           background: TRIGGER_BG,
           border: 'none',
           color: TEXT_DIM,
-          fontSize: 13,
+          fontSize,
+          fontWeight: fontSize > 13 ? 700 : 400,
           cursor: 'pointer',
+          ...triggerStyle,
         }}
       >
         <span>{value}</span>
@@ -73,8 +77,8 @@ export function YearSelect({ value, options, onChange }: YearSelectProps) {
         <div style={{
           position: 'absolute',
           top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
+          left: -10,
+          width: 120,
           background: PANEL_BG,
           border: `1px solid ${PANEL_BORDER}`,
           borderRadius: 8,
@@ -89,12 +93,12 @@ export function YearSelect({ value, options, onChange }: YearSelectProps) {
               style={{
                 width: '100%',
                 display: 'block',
-                padding: '9px 12px',
+                padding: '10px 14px',
                 background: y === value ? ACCENT_BG : 'transparent',
                 border: 'none',
                 color: y === value ? ACCENT : TEXT_ITEM,
-                fontSize: 13,
-                fontWeight: y === value ? 600 : 400,
+                fontSize,
+                fontWeight: y === value ? 700 : 400,
                 textAlign: 'left',
                 cursor: 'pointer',
               }}

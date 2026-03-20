@@ -28,9 +28,6 @@ export function MonthSelector({ selectedMonth, selectedYear, onMonthChange }: Mo
           </button>
         )
       })}
-      <span className="ml-2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-        {selectedYear}
-      </span>
     </div>
   )
 }

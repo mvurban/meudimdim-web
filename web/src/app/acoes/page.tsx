@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getAcoes, setAcoes, getInstitutions, mockPrecos } from '@/lib/mock-store'
+import { getAcoes, setAcoes, getInstitutions, mockPrecos, getStockDividends, setStockDividends } from '@/lib/mock-store'
 import type { AcaoItem } from '@/lib/mock-store'
-import type { Institution } from '@/types'
+import type { Institution, StockDividend } from '@/types'
+import { AcaoDividendModal } from '@/components/acoes/AcaoDividendModal'
 
 type FormState = {
   ticker: string
@@ -37,6 +38,8 @@ export default function AcoesPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
+  const [dividendAcao, setDividendAcao] = useState<string | null>(null)
+  const [stockDividends, setStockDividendsState] = useState<StockDividend[]>([])
 
   const email = session?.user?.email ?? null
 
@@ -44,6 +47,7 @@ export default function AcoesPage() {
     if (!email) return
     setItemsState(getAcoes(email))
     setInstitutions(getInstitutions(email))
+    setStockDividendsState(getStockDividends(email))
   }, [email])
 
   function setItems(updater: AcaoItem[] | ((prev: AcaoItem[]) => AcaoItem[])) {
@@ -56,6 +60,19 @@ export default function AcoesPage() {
 
   function getInstitution(id: string) {
     return institutions.find(i => i.id === id)
+  }
+
+  function saveDividends(acaoId: string, updated: StockDividend[]) {
+    const others = stockDividends.filter(d => d.acaoId !== acaoId)
+    const next = [...others, ...updated]
+    setStockDividendsState(next)
+    if (email) setStockDividends(email, next)
+  }
+
+  function dividendTotalFor(acaoId: string) {
+    return stockDividends
+      .filter(d => d.acaoId === acaoId)
+      .reduce((s, d) => s + d.dividendo + d.jcp + d.outros, 0)
   }
 
   function startAdd() {
@@ -195,6 +212,21 @@ export default function AcoesPage() {
         </div>
       )}
 
+      {/* Modal dividendos */}
+      {dividendAcao && (() => {
+        const acao = items.find(a => a.id === dividendAcao)
+        if (!acao) return null
+        return (
+          <AcaoDividendModal
+            acaoId={acao.id}
+            ticker={acao.ticker}
+            dividends={stockDividends.filter(d => d.acaoId === acao.id)}
+            onClose={() => setDividendAcao(null)}
+            onSave={updated => saveDividends(acao.id, updated)}
+          />
+        )
+      })()}
+
       {/* Tabela */}
       <div style={cardStyle}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -207,13 +239,14 @@ export default function AcoesPage() {
               <Th align="right">Preço Atual</Th>
               <Th align="right">Valor Total</Th>
               <Th align="right">Rendimento</Th>
+              <Th align="right">Dividendos</Th>
               <Th align="right">Ações</Th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '32px 0', fontSize: 13, color: 'var(--text-muted)' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', fontSize: 13, color: 'var(--text-muted)' }}>
                   Nenhuma ação cadastrada
                 </td>
               </tr>
@@ -224,6 +257,7 @@ export default function AcoesPage() {
               const valorTotal = item.quantidade * precoRef
               const rendimento = ((precoRef / item.precoMedio) - 1) * 100
               const positivo = rendimento >= 0
+              const divTotal = dividendTotalFor(item.id)
 
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -281,9 +315,13 @@ export default function AcoesPage() {
                       {positivo ? '▲' : '▼'} {Math.abs(rendimento).toFixed(2)}%
                     </span>
                   </td>
+                  <td style={{ ...tdStyle, textAlign: 'right', color: divTotal > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: divTotal > 0 ? 600 : 400 }}>
+                    {divTotal > 0 ? `R$ ${fmt(divTotal)}` : '—'}
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
-                    <button onClick={() => startEdit(item)} style={actionBtn}>Editar</button>
-                    <button onClick={() => remove(item.id)} style={{ ...actionBtn, color: 'var(--danger)' }}>Excluir</button>
+                    <button onClick={() => setDividendAcao(item.id)} style={actionBtn} title="Dividendos"><IconDividend /></button>
+                    <button onClick={() => startEdit(item)} style={actionBtn} title="Editar"><IconEdit /></button>
+                    <button onClick={() => remove(item.id)} style={{ ...actionBtn, color: 'var(--danger)' }} title="Excluir"><IconTrash /></button>
                   </td>
                 </tr>
               )
@@ -387,4 +425,34 @@ const actionBtn: React.CSSProperties = {
   color: 'var(--text-muted)',
   cursor: 'pointer',
   padding: '2px 8px',
+}
+
+function IconDividend() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  )
+}
+
+function IconEdit() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  )
+}
+
+function IconTrash() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
 }

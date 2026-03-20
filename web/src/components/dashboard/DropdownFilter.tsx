@@ -32,7 +32,7 @@ export function DropdownFilter({ label, items, selected, onToggle, onSelectAll }
   }, [])
 
   const allSelected = selected.length === items.length
-  const badge = allSelected ? 'Todos' : `${selected.length} selecionados`
+  const badge = selected.length === 0 ? 'Nenhum' : allSelected ? 'Todos' : `${selected.length} selecionados`
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
@@ -120,7 +120,6 @@ export function DropdownFilter({ label, items, selected, onToggle, onSelectAll }
           {/* Individual items */}
           {items.map(item => {
             const checked = selected.includes(item.id)
-            const isLast = checked && selected.length === 1
             return (
               <label
                 key={item.id}
@@ -129,17 +128,15 @@ export function DropdownFilter({ label, items, selected, onToggle, onSelectAll }
                   alignItems: 'center',
                   gap: 10,
                   padding: '8px 14px',
-                  cursor: isLast ? 'not-allowed' : 'pointer',
-                  opacity: isLast ? 0.5 : 1,
+                  cursor: 'pointer',
                   transition: 'background 0.1s',
                 }}
-                onMouseEnter={e => { if (!isLast) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
               >
                 <Checkbox
                   checked={checked}
                   onCheckedChange={() => onToggle(item.id)}
-                  disabled={isLast}
                 />
                 <span style={{
                   fontSize: 13,

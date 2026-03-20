@@ -24,7 +24,8 @@ import {
   mockDividends,
 } from '@/lib/mock-data'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
-import { useYear, CURRENT_YEAR, CURRENT_MONTH } from '@/lib/year-context'
+import { useYear, CURRENT_YEAR, CURRENT_MONTH, AVAILABLE_YEARS } from '@/lib/year-context'
+import { YearSelect } from '@/components/layout/YearSelect'
 
 type ModalState =
   | { open: false }
@@ -32,7 +33,7 @@ type ModalState =
   | { open: true; mode: 'edit'; productId: string }
 
 export default function ProdutosPage() {
-  const { selectedYear } = useYear()
+  const { selectedYear, setSelectedYear } = useYear()
   const [selectedMonth, setSelectedMonth] = useState(
     selectedYear === CURRENT_YEAR ? CURRENT_MONTH : 12
   )
@@ -291,13 +292,24 @@ export default function ProdutosPage() {
   return (
     <AppShell topbarAction={topbarAction}>
       <div className="space-y-5">
-        {/* Month selector */}
-        <div className="card" style={{ padding: '0.875rem 1.25rem' }}>
-          <MonthSelector
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            onMonthChange={setSelectedMonth}
-          />
+        {/* Year + Month selector */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '0.75rem' }}>
+          <div className="card" style={{ padding: '0.875rem 1.25rem', flexShrink: 0, width: 120, display: 'flex', alignItems: 'center' }}>
+            <YearSelect
+              value={selectedYear}
+              options={AVAILABLE_YEARS}
+              onChange={setSelectedYear}
+              fontSize={22}
+              triggerStyle={{ padding: 0, background: 'transparent', color: 'var(--text-primary)', borderRadius: 0, gap: 10 }}
+            />
+          </div>
+          <div className="card" style={{ padding: '0.875rem 1.25rem', flex: 1, display: 'flex', alignItems: 'center' }}>
+            <MonthSelector
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              onMonthChange={setSelectedMonth}
+            />
+          </div>
         </div>
 
         {/* Stat cards */}

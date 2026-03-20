@@ -151,6 +151,18 @@ export interface Dividend {
 }
 
 // ─────────────────────────────────────────────
+// STOCK DIVIDENDS
+// ─────────────────────────────────────────────
+export interface StockDividend {
+  id: string
+  acaoId: string
+  date: string        // ISO: yyyy-mm-dd
+  dividendo: number
+  jcp: number
+  outros: number
+}
+
+// ─────────────────────────────────────────────
 // STOCKS (ações)
 // ─────────────────────────────────────────────
 export interface StockTicker {

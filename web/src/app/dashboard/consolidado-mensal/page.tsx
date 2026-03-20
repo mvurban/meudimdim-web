@@ -29,7 +29,6 @@ export default function ConsolidadoMensalPage() {
   const [selCategories,   setSelCategories]   = useState<string[]>(ALL_CATEGORY_IDS)
 
   function toggleInstitution(id: string) {
-    if (selInstitutions.includes(id) && selInstitutions.length === 1) return
     setSelInstitutions(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     )
@@ -37,12 +36,11 @@ export default function ConsolidadoMensalPage() {
 
   function selectAllInstitutions() {
     setSelInstitutions(
-      selInstitutions.length === ALL_INSTITUTION_IDS.length ? [ALL_INSTITUTION_IDS[0]] : ALL_INSTITUTION_IDS
+      selInstitutions.length === ALL_INSTITUTION_IDS.length ? [] : ALL_INSTITUTION_IDS
     )
   }
 
   function toggleCategory(id: string) {
-    if (selCategories.includes(id) && selCategories.length === 1) return
     setSelCategories(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     )
@@ -50,7 +48,7 @@ export default function ConsolidadoMensalPage() {
 
   function selectAllCategories() {
     setSelCategories(
-      selCategories.length === ALL_CATEGORY_IDS.length ? [ALL_CATEGORY_IDS[0]] : ALL_CATEGORY_IDS
+      selCategories.length === ALL_CATEGORY_IDS.length ? [] : ALL_CATEGORY_IDS
     )
   }
 
@@ -75,7 +73,7 @@ export default function ConsolidadoMensalPage() {
         ? rows.reduce((s, r) => s + r.returnPct * r.totalValue, 0) / totalValue
         : 0
       return { label: monthLabel(month, year, true), contribution, withdrawal, returnPct, income, totalValue }
-    })
+    }).reverse()
   }, [selInstitutions, months])
 
   // ── Gráfico 1: por instituição ────────────────────────────────────
