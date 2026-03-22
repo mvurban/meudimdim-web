@@ -69,10 +69,12 @@ export function initUserData(email: string): void {
   localStorage.setItem(key(email, 'institutions'), JSON.stringify(mockInstitutions))
   localStorage.setItem(key(email, 'regions'), JSON.stringify(mockRegions))
   localStorage.setItem(key(email, 'liquidityOptions'), JSON.stringify(mockLiquidityOptions))
-  localStorage.setItem(key(email, 'products'), JSON.stringify([]))
+  localStorage.setItem(key(email, 'products'), JSON.stringify(mockProducts))
+  localStorage.setItem(key(email, 'productEntries'), JSON.stringify(mockEntries))
   localStorage.setItem(key(email, 'dividends'), JSON.stringify(mockDividends))
   localStorage.setItem(key(email, 'benchmarks'), JSON.stringify(mockBenchmarks))
   localStorage.setItem(key(email, 'acoes'), JSON.stringify(DEFAULT_ACOES))
+  localStorage.setItem(key(email, 'products_seeded'), '1')
   localStorage.setItem(key(email, 'initialized'), '1')
 }
 
@@ -224,7 +226,21 @@ export function setUserPrefs(email: string, prefs: Partial<UserPrefs>): void {
 // ─────────────────────────────────────────────
 export function getProducts(email: string): Product[] {
   const d = localStorage.getItem(key(email, 'products'))
-  return d ? JSON.parse(d) : mockProducts
+  if (!d) return mockProducts
+
+  const stored: Product[] = JSON.parse(d)
+
+  // Migração: produtos foram inicializados com [] antes da correção.
+  // Roda uma única vez — mescla mockProducts com eventuais agregados já salvos.
+  if (!localStorage.getItem(key(email, 'products_seeded'))) {
+    const aggregated = stored.filter(p => p.isAggregated)
+    const migrated = [...mockProducts, ...aggregated]
+    localStorage.setItem(key(email, 'products'), JSON.stringify(migrated))
+    localStorage.setItem(key(email, 'products_seeded'), '1')
+    return migrated
+  }
+
+  return stored
 }
 
 export function setProducts(email: string, items: Product[]): void {
@@ -369,7 +385,7 @@ export function getLastRefresh(email: string): string | null {
 }
 
 export function deleteUserData(email: string): void {
-  ['categories', 'assetClasses', 'institutions', 'regions', 'liquidityOptions', 'products', 'productEntries', 'dividends', 'benchmarks', 'acoes', 'initialized', 'lastRefresh'].forEach(e => {
+  ['categories', 'assetClasses', 'institutions', 'regions', 'liquidityOptions', 'products', 'productEntries', 'dividends', 'benchmarks', 'acoes', 'initialized', 'lastRefresh', 'products_seeded'].forEach(e => {
     localStorage.removeItem(key(email, e))
   })
 }

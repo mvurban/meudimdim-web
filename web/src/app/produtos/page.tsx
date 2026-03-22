@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { MonthSelector } from '@/components/produtos/MonthSelector'
 import { FilterBar } from '@/components/produtos/FilterBar'
@@ -14,6 +15,8 @@ import type { ImportResult } from '@/lib/csv-import'
 import { CopyFromPrevModal } from '@/components/produtos/CopyFromPrevModal'
 import { ProductDetailModal } from '@/components/produtos/ProductDetailModal'
 import { DividendModal } from '@/components/produtos/DividendModal'
+import { DeleteProductModal } from '@/components/produtos/DeleteProductModal'
+import { ReactivateProductModal } from '@/components/produtos/ReactivateProductModal'
 import {
   mockProducts,
   mockEntries,
@@ -54,6 +57,7 @@ type ModalState =
 export default function ProdutosPage() {
   const { data: session } = useSession()
   const email = session?.user?.email ?? null
+  const router = useRouter()
 
   const { selectedYear, setSelectedYear } = useYear()
   const [selectedMonth, setSelectedMonth] = useState(
@@ -118,6 +122,9 @@ export default function ProdutosPage() {
   const [copyModalOpen, setCopyModalOpen] = useState(false)
   const [detailProductId, setDetailProductId] = useState<string | null>(null)
   const [dividendProductId, setDividendProductId] = useState<string | null>(null)
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
+  const [reactivateProductId, setReactivateProductId] = useState<string | null>(null)
+  const [showClosed, setShowClosed] = useState(false)
 
   // Previous month/year
   const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
@@ -140,11 +147,12 @@ export default function ProdutosPage() {
     return monthEntries.filter(e => {
       const product = products.find(p => p.id === e.productId)
       if (!product) return false
+      if (showClosed ? !e.isClosed : e.isClosed) return false
       if (categoryFilter && product.categoryId !== categoryFilter) return false
       if (institutionFilter && product.institutionId !== institutionFilter) return false
       return true
     })
-  }, [monthEntries, products, categoryFilter, institutionFilter])
+  }, [monthEntries, products, categoryFilter, institutionFilter, showClosed])
 
   // Dividend totals per product for the selected month — computed directly (no memo)
   const dividendByProduct: Record<string, number> = {}
@@ -290,17 +298,19 @@ export default function ProdutosPage() {
       const withoutDest = prev.filter(
         e => !(e.month === selectedMonth && e.year === selectedYear),
       )
-      const copied = prevMonthEntries.map((e, i) => ({
-        ...e,
-        id: `e_copy_${Date.now()}_${i}`,
-        month: selectedMonth,
-        year: selectedYear,
-        contribution: 0,
-        withdrawal: 0,
-        returnPct: 0,
-        income: 0,
-        createdAt: now,
-      }))
+      const copied = prevMonthEntries
+        .filter(e => !e.isClosed)
+        .map((e, i) => ({
+          ...e,
+          id: `e_copy_${Date.now()}_${i}`,
+          month: selectedMonth,
+          year: selectedYear,
+          contribution: 0,
+          withdrawal: 0,
+          returnPct: 0,
+          income: 0,
+          createdAt: now,
+        }))
       return [...withoutDest, ...copied]
     })
     setCopyModalOpen(false)
@@ -315,6 +325,34 @@ export default function ProdutosPage() {
       }),
       ...updated,
     ])
+  }
+
+  function handleReactivate(productId: string) {
+    setEntries(prev => prev.map(e =>
+      e.productId === productId && e.month === selectedMonth && e.year === selectedYear
+        ? { ...e, isClosed: false }
+        : e
+    ))
+    setReactivateProductId(null)
+  }
+
+  function handleDelete(productId: string) {
+    const product = products.find(p => p.id === productId)
+    if (product?.isAggregated) {
+      setEntries(prev => prev.filter(e => !(e.productId === productId && e.month === selectedMonth && e.year === selectedYear)))
+      setDividends(prev => prev.filter(d => {
+        if (d.productId !== productId) return true
+        const [y, m] = d.date.split('-').map(Number)
+        return !(m === selectedMonth && y === selectedYear)
+      }))
+    } else {
+      setEntries(prev => prev.map(e =>
+        e.productId === productId && e.month === selectedMonth && e.year === selectedYear
+          ? { ...e, isClosed: true }
+          : e
+      ))
+    }
+    setDeleteProductId(null)
   }
 
   function handleImport(result: ImportResult) {
@@ -385,45 +423,30 @@ export default function ProdutosPage() {
           exchangeRate={exchangeRate}
         />
 
-        {/* Filter bar */}
-        <div className="flex items-center">
+        {/* Filter bar + copiar do mês anterior */}
+        <div className="flex items-center gap-4">
           <FilterBar
             categories={availableCategories}
             institutions={availableInstitutions}
             categoryFilter={categoryFilter}
             institutionFilter={institutionFilter}
-            onCategoryChange={val => { setCategoryFilter(val); setInstitutionFilter('') }}
-            onInstitutionChange={setInstitutionFilter}
+            onCategoryChange={val => { setCategoryFilter(val); setInstitutionFilter(''); setShowClosed(false) }}
+            onInstitutionChange={val => { setInstitutionFilter(val); setShowClosed(false) }}
           />
-        </div>
-
-        {/* Banner: copiar do mês anterior */}
-        {prevMonthEntries.length > 0 && !categoryFilter && !institutionFilter && (
-          monthEntries.length === 0 ? (
-            // Mês vazio — banner destacado
-            <div
-              className="card flex items-center justify-between gap-4 px-5 py-4"
-              style={{ borderLeft: '3px solid var(--brand)', background: 'var(--brand-subtle)' }}
-            >
-              <div className="flex items-center gap-3">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                </svg>
-                <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                  Nenhum produto em {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][selectedMonth - 1]}/{selectedYear}.
-                  {' '}Deseja copiar os <strong>{prevMonthEntries.length} produtos</strong> de {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][prevMonth - 1]}/{prevYear}?
-                </span>
-              </div>
-              <button className="btn-brand text-sm flex-shrink-0" onClick={() => setCopyModalOpen(true)}>
-                Copiar do mês anterior
-              </button>
-            </div>
-          ) : (
-            // Mês com dados — botão discreto
-            <div className="flex justify-end">
+          <label className="flex items-center gap-2 cursor-pointer flex-shrink-0" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <input
+              type="checkbox"
+              checked={showClosed}
+              onChange={e => setShowClosed(e.target.checked)}
+              style={{ accentColor: 'var(--brand)', width: 14, height: 14, cursor: 'pointer' }}
+            />
+            Mostrar encerrados
+          </label>
+          {prevMonthEntries.length > 0 && !categoryFilter && !institutionFilter && monthEntries.length > 0 && (
+            <>
+              <div style={{ flex: 1 }} />
               <button
-                className="btn-ghost text-sm flex items-center gap-2"
+                className="btn-ghost text-sm flex items-center gap-2 flex-shrink-0"
                 style={{ color: 'var(--text-muted)' }}
                 onClick={() => setCopyModalOpen(true)}
               >
@@ -433,17 +456,52 @@ export default function ProdutosPage() {
                 </svg>
                 Copiar do mês anterior
               </button>
+            </>
+          )}
+        </div>
+
+        {/* Banner: mês vazio — copiar do mês anterior */}
+        {prevMonthEntries.length > 0 && !categoryFilter && !institutionFilter && monthEntries.length === 0 && (
+          <div
+            className="card flex items-center justify-between gap-4 px-5 py-4"
+            style={{ borderLeft: '3px solid var(--brand)', background: 'var(--brand-subtle)' }}
+          >
+            <div className="flex items-center gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                Nenhum produto em {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][selectedMonth - 1]}/{selectedYear}.
+                {' '}Deseja copiar os <strong>{prevMonthEntries.length} produtos</strong> de {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][prevMonth - 1]}/{prevYear}?
+              </span>
             </div>
-          )
+            <button className="btn-brand text-sm flex-shrink-0" onClick={() => setCopyModalOpen(true)}>
+              Copiar do mês anterior
+            </button>
+          </div>
         )}
 
         {/* Category groups */}
         {groups.length === 0 ? (
           <div
-            className="card flex items-center justify-center py-16 text-sm"
+            className="card flex flex-col items-center justify-center py-16 gap-2 text-sm"
             style={{ color: 'var(--text-muted)' }}
           >
-            Nenhum produto encontrado para este mês / filtro.
+            {showClosed ? (
+              <>
+                <span>Não há produtos encerrados neste mês.</span>
+                <button
+                  className="text-sm"
+                  style={{ color: 'var(--brand)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  onClick={() => setShowClosed(false)}
+                >
+                  Voltar para produtos ativos
+                </button>
+              </>
+            ) : (
+              <span>Nenhum produto encontrado para este mês / filtro.</span>
+            )}
           </div>
         ) : (
           <div className="space-y-4 stagger">
@@ -458,6 +516,11 @@ export default function ProdutosPage() {
                 onEdit={productId => setModal({ open: true, mode: 'edit', productId })}
                 onDetail={setDetailProductId}
                 onDividend={setDividendProductId}
+                onDelete={setDeleteProductId}
+                onReactivate={setReactivateProductId}
+                onAggregated={(institutionId, assetClassId) =>
+                  router.push(`/acoes?institution=${institutionId}&assetClass=${assetClassId}`)
+                }
                 dividendByProduct={dividendByProduct}
               />
             ))}
@@ -565,6 +628,37 @@ export default function ProdutosPage() {
             dividends={productDividends}
             onClose={() => setDividendProductId(null)}
             onSave={updated => handleSaveDividends(dividendProductId, selectedMonth, selectedYear, updated)}
+          />
+        )
+      })()}
+      {/* Modal de reativação de produto */}
+      {reactivateProductId && (() => {
+        const product = products.find(p => p.id === reactivateProductId)
+        const institution = product ? institutions.find(i => i.id === product.institutionId) : undefined
+        if (!product || !institution) return null
+        return (
+          <ReactivateProductModal
+            product={product}
+            institution={institution}
+            onCancel={() => setReactivateProductId(null)}
+            onConfirm={() => handleReactivate(reactivateProductId)}
+          />
+        )
+      })()}
+
+      {/* Modal de exclusão de produto */}
+      {deleteProductId && (() => {
+        const product = products.find(p => p.id === deleteProductId)
+        const institution = product ? institutions.find(i => i.id === product.institutionId) : undefined
+        if (!product || !institution) return null
+        return (
+          <DeleteProductModal
+            product={product}
+            institution={institution}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onCancel={() => setDeleteProductId(null)}
+            onConfirm={() => handleDelete(deleteProductId)}
           />
         )
       })()}

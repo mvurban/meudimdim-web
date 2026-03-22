@@ -125,6 +125,7 @@ export interface ProductEntry {
   exchangeRate?: number     // cotação usada
   notes?: string
   createdAt: string
+  isClosed?: boolean  // produto encerrado neste mês — não replicado para meses futuros
 }
 
 // ─────────────────────────────────────────────

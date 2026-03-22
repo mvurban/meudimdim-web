@@ -349,7 +349,7 @@ export function ProdutoModal({
             </div>
             <div className="flex gap-3">
               <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
-              <button type="submit" className="btn-brand" disabled={selectedClassIsAcao}>
+              <button type="submit" className="btn-brand">
                 {mode === 'create' ? 'Adicionar' : 'Salvar'}
               </button>
             </div>

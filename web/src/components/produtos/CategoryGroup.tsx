@@ -11,6 +11,9 @@ interface CategoryGroupProps {
   onEdit: (productId: string) => void
   onDetail: (productId: string) => void
   onDividend: (productId: string) => void
+  onDelete: (productId: string) => void
+  onReactivate: (productId: string) => void
+  onAggregated: (institutionId: string, assetClassId: string) => void
   dividendByProduct: Record<string, number>
 }
 
@@ -23,6 +26,9 @@ export function CategoryGroup({
   onEdit,
   onDetail,
   onDividend,
+  onDelete,
+  onReactivate,
+  onAggregated,
   dividendByProduct,
 }: CategoryGroupProps) {
   const totalBrl          = entries.reduce((s, e) => s + e.valueBrl, 0)
@@ -152,6 +158,9 @@ export function CategoryGroup({
                   onEdit={() => onEdit(product.id)}
                   onDetail={() => onDetail(product.id)}
                   onDividend={() => onDividend(product.id)}
+                  onDelete={() => onDelete(product.id)}
+                  onReactivate={() => onReactivate(product.id)}
+                  onAggregated={product.isAggregated ? () => onAggregated(product.institutionId, product.assetClassId) : undefined}
                   dividendTotal={dividendByProduct[entry.productId] ?? 0}
                 />
               )

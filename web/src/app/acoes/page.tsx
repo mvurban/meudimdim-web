@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { getAcoes, setAcoes, getInstitutions, getAssetClasses, mockPrecos, getStockDividends, setStockDividends, getUserPrefs, setUserPrefs, upsertAggregatedProducts, getLastRefresh } from '@/lib/mock-store'
 import type { AcaoItem, UserPrefs } from '@/lib/mock-store'
@@ -56,6 +57,7 @@ function initials(name: string): string {
 
 export default function AcoesPage() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   const [items, setItemsState] = useState<AcaoItem[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [assetClasses, setAssetClassesState] = useState<AssetClass[]>([])
@@ -64,8 +66,8 @@ export default function AcoesPage() {
   const [form, setForm] = useState<FormState>(EMPTY)
   const [dividendAcao, setDividendAcao] = useState<string | null>(null)
   const [stockDividends, setStockDividendsState] = useState<StockDividend[]>([])
-  const [institutionFilter, setInstitutionFilter] = useState('')
-  const [assetClassFilter, setAssetClassFilter] = useState('')
+  const [institutionFilter, setInstitutionFilter] = useState(searchParams.get('institution') ?? '')
+  const [assetClassFilter, setAssetClassFilter] = useState(searchParams.get('assetClass') ?? '')
   const [tickerSearch, setTickerSearch] = useState('')
   const [removeModal, setRemoveModal] = useState<{ id: string; ticker: string } | null>(null)
   const [pageSize, setPageSizeState] = useState<UserPrefs['acoesPageSize']>(20)
@@ -177,18 +179,31 @@ export default function AcoesPage() {
       ...precos,
     }
 
-    if (adding) {
-      setItems(prev => [...prev, item])
-    } else {
-      setItems(prev => prev.map(a => a.id === editing ? item : a))
-    }
+    const newAcoes = adding
+      ? [...items, item]
+      : items.map(a => a.id === editing ? item : a)
+    saveAcoesAndRecalc(newAcoes)
     cancel()
   }
 
   function confirmRemove() {
     if (!removeModal) return
-    setItems(prev => prev.filter(a => a.id !== removeModal.id))
+    const newAcoes = items.filter(a => a.id !== removeModal.id)
+    saveAcoesAndRecalc(newAcoes)
     setRemoveModal(null)
+  }
+
+  // Persiste acoes e recalcula agregados com os preços já em cache (sem Yahoo Finance)
+  function saveAcoesAndRecalc(newAcoes: AcaoItem[]) {
+    if (!email) return
+    setAcoes(email, newAcoes)
+    setItemsState(newAcoes)
+    try {
+      const now = new Date()
+      upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
+    } catch (e) {
+      console.error('Erro ao recalcular agregados:', e)
+    }
   }
 
   function changePageSize(size: UserPrefs['acoesPageSize']) {
