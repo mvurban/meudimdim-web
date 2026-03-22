@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
@@ -55,7 +55,7 @@ function initials(name: string): string {
   return words.map(w => w[0]).join('').slice(0, 3).toUpperCase()
 }
 
-export default function AcoesPage() {
+function AcoesPageInner() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   const [items, setItemsState] = useState<AcaoItem[]>([])
@@ -640,6 +640,14 @@ export default function AcoesPage() {
         document.body
       )}
     </AppShell>
+  )
+}
+
+export default function AcoesPage() {
+  return (
+    <Suspense>
+      <AcoesPageInner />
+    </Suspense>
   )
 }
 
