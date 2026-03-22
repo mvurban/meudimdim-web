@@ -91,6 +91,7 @@ export function ProdutoModal({
   }, [mode, product, entry, regions, liquidityOptions])
 
   const filteredClasses = assetClasses.filter(ac => ac.categoryId === form.categoryId)
+  const selectedClassIsAcao = assetClasses.find(ac => ac.id === form.assetClassId)?.isAcao ?? false
 
   function set<K extends keyof ProdutoFormData>(key: K, value: ProdutoFormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -182,6 +183,23 @@ export function ProdutoModal({
                 <option value="">Selecione...</option>
                 {filteredClasses.map(ac => <option key={ac.id} value={ac.id}>{ac.name}</option>)}
               </select>
+              {selectedClassIsAcao && (
+                <div style={{
+                  marginTop: 8, padding: '10px 12px', borderRadius: 8,
+                  background: '#f59e0b15', border: '1px solid #f59e0b40',
+                  display: 'flex', gap: 8, alignItems: 'flex-start',
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <p style={{ margin: 0, fontSize: 12, color: '#f59e0b', lineHeight: 1.5 }}>
+                    Esta classe é gerenciada automaticamente pela área{' '}
+                    <a href="/acoes" style={{ color: '#f59e0b', fontWeight: 700, textDecoration: 'underline' }}>Ações/FIIs</a>.
+                    Cadastre seus ativos lá para que os valores sejam calculados corretamente.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Instituição */}
@@ -331,7 +349,7 @@ export function ProdutoModal({
             </div>
             <div className="flex gap-3">
               <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
-              <button type="submit" className="btn-brand">
+              <button type="submit" className="btn-brand" disabled={selectedClassIsAcao}>
                 {mode === 'create' ? 'Adicionar' : 'Salvar'}
               </button>
             </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
 import { MonthSelector } from '@/components/produtos/MonthSelector'
 import { FilterBar } from '@/components/produtos/FilterBar'
@@ -23,6 +24,24 @@ import {
   mockLiquidityOptions,
   mockDividends,
 } from '@/lib/mock-data'
+import {
+  getProducts as storeGetProducts,
+  setProducts as storeSetProducts,
+  getProductEntries,
+  setProductEntries,
+  getCategories,
+  setCategories as storeSetCategories,
+  getAssetClasses,
+  setAssetClasses as storeSetAssetClasses,
+  getInstitutions,
+  setInstitutions as storeSetInstitutions,
+  getRegions,
+  setRegions as storeSetRegions,
+  getLiquidityOptions,
+  setLiquidityOptions as storeSetLiquidityOptions,
+  getDividends,
+  setDividends as storeSetDividends,
+} from '@/lib/mock-store'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
 import { useYear, CURRENT_YEAR, CURRENT_MONTH, AVAILABLE_YEARS } from '@/lib/year-context'
 import { YearSelect } from '@/components/layout/YearSelect'
@@ -33,6 +52,9 @@ type ModalState =
   | { open: true; mode: 'edit'; productId: string }
 
 export default function ProdutosPage() {
+  const { data: session } = useSession()
+  const email = session?.user?.email ?? null
+
   const { selectedYear, setSelectedYear } = useYear()
   const [selectedMonth, setSelectedMonth] = useState(
     selectedYear === CURRENT_YEAR ? CURRENT_MONTH : 12
@@ -41,16 +63,56 @@ export default function ProdutosPage() {
   useEffect(() => {
     setSelectedMonth(selectedYear === CURRENT_YEAR ? CURRENT_MONTH : 12)
   }, [selectedYear])
+
   const [categoryFilter, setCategoryFilter] = useState('')
   const [institutionFilter, setInstitutionFilter] = useState('')
-  const [categories, setCategories]     = useState<Category[]>(mockCategories)
-  const [assetClasses, setAssetClasses] = useState<AssetClass[]>(mockAssetClasses)
-  const [institutions, setInstitutions] = useState<Institution[]>(mockInstitutions)
-  const [regions, setRegions]           = useState<Region[]>(mockRegions)
-  const [liquidityOptions, setLiquidityOptions] = useState<LiquidityOption[]>(mockLiquidityOptions)
-  const [products, setProducts]         = useState<Product[]>(mockProducts)
-  const [entries, setEntries]           = useState<ProductEntry[]>(mockEntries)
-  const [dividends, setDividendsState]   = useState<Dividend[]>(mockDividends)
+  const [categories, setCategoriesState]         = useState<Category[]>(mockCategories)
+  const [assetClasses, setAssetClassesState]     = useState<AssetClass[]>(mockAssetClasses)
+  const [institutions, setInstitutionsState]     = useState<Institution[]>(mockInstitutions)
+  const [regions, setRegionsState]               = useState<Region[]>(mockRegions)
+  const [liquidityOptions, setLiquidityOptionsState] = useState<LiquidityOption[]>(mockLiquidityOptions)
+  const [products, setProductsState]             = useState<Product[]>(mockProducts)
+  const [entries, setEntriesState]               = useState<ProductEntry[]>(mockEntries)
+  const [dividends, setDividendsState]           = useState<Dividend[]>(mockDividends)
+
+  // Carrega do localStorage quando o email estiver disponível
+  useEffect(() => {
+    if (!email) return
+    setCategoriesState(getCategories(email))
+    setAssetClassesState(getAssetClasses(email))
+    setInstitutionsState(getInstitutions(email))
+    setRegionsState(getRegions(email))
+    setLiquidityOptionsState(getLiquidityOptions(email))
+    setProductsState(storeGetProducts(email))
+    setEntriesState(getProductEntries(email))
+    setDividendsState(getDividends(email))
+  }, [email])
+
+  // Wrappers que persistem no localStorage
+  function setCategories(upd: Category[] | ((p: Category[]) => Category[])) {
+    setCategoriesState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetCategories(email, n); return n })
+  }
+  function setAssetClasses(upd: AssetClass[] | ((p: AssetClass[]) => AssetClass[])) {
+    setAssetClassesState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetAssetClasses(email, n); return n })
+  }
+  function setInstitutions(upd: Institution[] | ((p: Institution[]) => Institution[])) {
+    setInstitutionsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetInstitutions(email, n); return n })
+  }
+  function setRegions(upd: Region[] | ((p: Region[]) => Region[])) {
+    setRegionsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetRegions(email, n); return n })
+  }
+  function setLiquidityOptions(upd: LiquidityOption[] | ((p: LiquidityOption[]) => LiquidityOption[])) {
+    setLiquidityOptionsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetLiquidityOptions(email, n); return n })
+  }
+  function setProducts(upd: Product[] | ((p: Product[]) => Product[])) {
+    setProductsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetProducts(email, n); return n })
+  }
+  function setEntries(upd: ProductEntry[] | ((p: ProductEntry[]) => ProductEntry[])) {
+    setEntriesState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) setProductEntries(email, n); return n })
+  }
+  function setDividends(upd: Dividend[] | ((p: Dividend[]) => Dividend[])) {
+    setDividendsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetDividends(email, n); return n })
+  }
   const [modal, setModal]               = useState<ModalState>({ open: false })
   const [importOpen, setImportOpen]       = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
@@ -245,7 +307,7 @@ export default function ProdutosPage() {
   }
 
   function handleSaveDividends(productId: string, month: number, year: number, updated: Dividend[]) {
-    setDividendsState(prev => [
+    setDividends(prev => [
       ...prev.filter(d => {
         if (d.productId !== productId) return true
         const [y, m] = d.date.split('-').map(Number)

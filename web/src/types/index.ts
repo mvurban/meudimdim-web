@@ -30,6 +30,7 @@ export interface AssetClass {
   name: string
   categoryId: string
   category?: Category
+  isAcao?: boolean   // true = classe de sistema (Ações, FIIs) — não pode ser removida
 }
 
 export interface Institution {
@@ -96,6 +97,7 @@ export interface Product {
   status: ProductStatus
   createdAt: string
   details?: string
+  isAggregated?: boolean  // true = gerenciado automaticamente pela área Ações/FIIs
   // computed from latest entry
   currentValue?: number
   currentValueBrl?: number

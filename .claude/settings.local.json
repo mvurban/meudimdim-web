@@ -10,7 +10,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
       "Bash(npm install:*)",
-      "Bash(node -e \"const p = require\\(''/app/web/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js''\\); console.log\\(Object.keys\\(p\\).slice\\(0,20\\)\\)\")"
+      "Bash(node -e \"const p = require\\(''/app/web/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js''\\); console.log\\(Object.keys\\(p\\).slice\\(0,20\\)\\)\")",
+      "Bash(find C:/Projetos/mvurban/meudimdim/meudimdim-web/web/src -name *.ts)"
     ]
   }
 }
