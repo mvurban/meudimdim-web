@@ -90,8 +90,9 @@ export function ProdutoModal({
     }
   }, [mode, product, entry, regions, liquidityOptions])
 
+  const isAggregated = mode === 'edit' && (product?.isAggregated ?? false)
   const filteredClasses = assetClasses.filter(ac => ac.categoryId === form.categoryId)
-  const selectedClassIsAcao = assetClasses.find(ac => ac.id === form.assetClassId)?.isAcao ?? false
+  const selectedClassIsAcao = !isAggregated && (assetClasses.find(ac => ac.id === form.assetClassId)?.isAcao ?? false)
 
   function set<K extends keyof ProdutoFormData>(key: K, value: ProdutoFormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -142,6 +143,25 @@ export function ProdutoModal({
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
+          {/* Aviso produto agregado */}
+          {isAggregated && (
+            <div style={{
+              padding: '10px 12px', borderRadius: 8,
+              background: '#f59e0b15', border: '1px solid #f59e0b40',
+              display: 'flex', gap: 8, alignItems: 'flex-start',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <p style={{ margin: 0, fontSize: 12, color: '#f59e0b', lineHeight: 1.5 }}>
+                Este produto é gerenciado automaticamente pela área{' '}
+                <a href="/acoes" style={{ color: '#f59e0b', fontWeight: 700, textDecoration: 'underline' }}>Ações/FIIs</a>.
+                {' '}Nome, categoria, subcategoria, instituição e valores totais são sobrescritos a cada atualização de cotações.
+              </p>
+            </div>
+          )}
+
           {/* ── Seção 1: dados do produto ── */}
           <div className="grid grid-cols-2 gap-4">
             {/* Nome */}
@@ -153,6 +173,7 @@ export function ProdutoModal({
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 placeholder="Ex: CDB XP 110% CDI"
+                disabled={isAggregated}
               />
             </div>
 
@@ -164,6 +185,7 @@ export function ProdutoModal({
                 required
                 value={form.categoryId}
                 onChange={e => handleCategoryChange(e.target.value)}
+                disabled={isAggregated}
               >
                 <option value="">Selecione...</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -178,7 +200,7 @@ export function ProdutoModal({
                 required
                 value={form.assetClassId}
                 onChange={e => set('assetClassId', e.target.value)}
-                disabled={!form.categoryId}
+                disabled={isAggregated || !form.categoryId}
               >
                 <option value="">Selecione...</option>
                 {filteredClasses.map(ac => <option key={ac.id} value={ac.id}>{ac.name}</option>)}
@@ -210,6 +232,7 @@ export function ProdutoModal({
                 required
                 value={form.institutionId}
                 onChange={e => set('institutionId', e.target.value)}
+                disabled={isAggregated}
               >
                 <option value="">Selecione...</option>
                 {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
@@ -312,6 +335,7 @@ export function ProdutoModal({
                 step={0.01}
                 value={form.valueUsd}
                 onChange={e => set('valueUsd', parseFloat(e.target.value) || 0)}
+                disabled={isAggregated}
               />
             </div>
 
@@ -325,6 +349,7 @@ export function ProdutoModal({
                 step={0.01}
                 value={form.valueBrl}
                 onChange={e => set('valueBrl', parseFloat(e.target.value) || 0)}
+                disabled={isAggregated}
               />
             </div>
           </div>
