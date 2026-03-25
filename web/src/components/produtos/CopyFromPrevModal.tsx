@@ -5,6 +5,15 @@ import { ModalPortal } from '@/components/ui/ModalPortal'
 
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
+function isMonthIncomplete(month: number, year: number): boolean {
+  const today = new Date()
+  if (month !== today.getMonth() + 1 || year !== today.getFullYear()) return false
+  const firstOfNextMonth = new Date(year, month, 1) // month é 1-based, Date usa 0-based → correto
+  const threshold = new Date(firstOfNextMonth)
+  threshold.setDate(threshold.getDate() - 3)
+  return today < threshold
+}
+
 interface CopyFromPrevModalProps {
   prevMonth: number
   prevYear: number
@@ -23,6 +32,7 @@ export function CopyFromPrevModal({
 }: CopyFromPrevModalProps) {
   const [checked, setChecked] = useState(false)
   const isOverwrite = destCount > 0
+  const isIncomplete = isMonthIncomplete(prevMonth, prevYear)
 
   const prevLabel = `${MONTHS[prevMonth - 1]}/${prevYear}`
   const destLabel = `${MONTHS[destMonth - 1]}/${destYear}`
@@ -62,6 +72,17 @@ export function CopyFromPrevModal({
         </div>
 
         <div className="px-6 py-5 space-y-4">
+
+          {/* Aviso de mês incompleto */}
+          {isIncomplete && (
+            <div className="rounded-lg p-3 text-sm space-y-1" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <div className="font-semibold" style={{ color: '#f59e0b' }}>Mês ainda não finalizado</div>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>{prevLabel}</strong> ainda não chegou ao final.
+                Copiar agora pode resultar em dados incompletos, pois o mês pode ter atualizações nos próximos dias.
+              </p>
+            </div>
+          )}
 
           {/* Simple mode */}
           {!isOverwrite && (
@@ -132,7 +153,7 @@ export function CopyFromPrevModal({
               </button>
             ) : (
               <button className="btn-brand text-sm" onClick={onConfirm}>
-                Confirmar
+                {isIncomplete ? 'Copiar mesmo assim' : 'Confirmar'}
               </button>
             )}
           </div>

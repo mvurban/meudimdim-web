@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getAssetClasses, setAssetClasses, getCategories } from '@/lib/mock-store'
-import { mockProducts } from '@/lib/mock-data'
+import { getAssetClasses, setAssetClasses, getCategories, getProducts } from '@/lib/mock-store'
 import type { AssetClass, Category } from '@/types'
 
 type FormState = { name: string; categoryId: string }
@@ -80,7 +79,7 @@ export default function ClassesPage() {
 
   function requestRemove(item: AssetClass) {
     if (item.isAcao) return
-    const productsCount = mockProducts.filter(p => p.assetClassId === item.id).length
+    const productsCount = email ? getProducts(email).filter(p => p.assetClassId === item.id).length : 0
     setRemoveModal({ id: item.id, name: item.name, productsCount })
   }
 

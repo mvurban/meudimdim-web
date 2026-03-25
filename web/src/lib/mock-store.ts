@@ -384,6 +384,10 @@ export function getLastRefresh(email: string): string | null {
   return localStorage.getItem(key(email, 'lastRefresh'))
 }
 
+export function setLastRefresh(email: string, iso: string): void {
+  localStorage.setItem(key(email, 'lastRefresh'), iso)
+}
+
 export function deleteUserData(email: string): void {
   ['categories', 'assetClasses', 'institutions', 'regions', 'liquidityOptions', 'products', 'productEntries', 'dividends', 'benchmarks', 'acoes', 'initialized', 'lastRefresh', 'products_seeded'].forEach(e => {
     localStorage.removeItem(key(email, e))

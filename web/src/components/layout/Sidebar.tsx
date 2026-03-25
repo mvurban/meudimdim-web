@@ -8,6 +8,8 @@ import { ThemeToggle } from './ThemeToggle'
 import { initUserData } from '@/lib/mock-store'
 import { useYear, AVAILABLE_YEARS } from '@/lib/year-context'
 import { YearSelect } from './YearSelect'
+import { useNotifications } from '@/lib/notification-context'
+import { runDailySyncIfNeeded } from '@/lib/daily-sync'
 
 const NAV = [
   { href: '/produtos',  icon: '◈', label: 'Produtos'  },
@@ -35,6 +37,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const { selectedYear, setSelectedYear } = useYear()
+  const { addNotification } = useNotifications()
   const [expanded, setExpanded] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = sessionStorage.getItem('sidebar-config-expanded')
@@ -52,8 +55,10 @@ export function Sidebar() {
 
   useEffect(() => {
     const email = session?.user?.email
-    if (email) initUserData(email)
-  }, [session])
+    if (!email) return
+    initUserData(email)
+    runDailySyncIfNeeded(email, addNotification)
+  }, [session]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleExpanded() {
     setExpanded(v => {

@@ -2,9 +2,17 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export const AVAILABLE_YEARS = [2024, 2025, 2026]
-export const CURRENT_YEAR  = 2026
-export const CURRENT_MONTH = 3
+const _now = new Date()
+export const CURRENT_YEAR  = _now.getFullYear()
+export const CURRENT_MONTH = _now.getMonth() + 1
+
+function buildAvailableYears(): number[] {
+  const years: number[] = []
+  for (let y = 2024; y <= CURRENT_YEAR; y++) years.push(y)
+  if (CURRENT_MONTH === 12) years.push(CURRENT_YEAR + 1)
+  return years
+}
+export const AVAILABLE_YEARS = buildAvailableYears()
 
 interface YearContextValue {
   selectedYear: number

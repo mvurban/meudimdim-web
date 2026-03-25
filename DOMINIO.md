@@ -32,7 +32,9 @@
 
       - Sempre que a funcionalidade de recuperar as ações é finalizada os valores dos produtos agregados são atualizados com o novo valor calculado.
 
-
+   ## Meses dos produtos
+      - O sistema é vivo, e o andamento dos anos e meses também. Ao iniciar sua conta sem importações por exemplo, se você começa em 2026 no mes de março, apenas maio e abril ficam disponíveis para editção, os demais meses ficam inativos. Com o passar do tempo, novos meses vão sendo habilitados. Exemplo: Se estamos em março, abril também fica habilitado para cadastro e edição, porém maio fica inacessível. Quando chegarmos em 1 de abrir, maio se torna disponível. 
+      - então quando chegar em 2027, a combo de ano terá que ter esse ano disponível em Dezembro de 2026 só com janeiro clicável, os demais meses inativos. Em 1 de janeiro, fevereiro habilita e assim por diante.
 ---
 
 
@@ -44,5 +46,13 @@
 
 ---
 
-## CLASSE DE ATIVOS
+# CLASSE DE ATIVOS
    - Existem  duas classes de ativos especiais: Ações e FIIs (Fundos Imobiliários). Elas terão uma flag isAcao que, quando verdadeira, o sistema terá comportamentos diferentes em relação às demais classes de ativos. Serão consideradas como Classes de Ativos de sistema e por isso não poderão ser removidas na área Classe de Ativos.
+
+
+# SININHO
+   - Haverá eventos no site que precisarão reportar uma falha em background ou sucesso, ou ainda mensagens que o usuário precisa de atenção.
+   - Teremos em cada mensagem data, hora e um texto curto sinalizando o problema.
+   - Quando o sitema incluir uma nova mensagem o sininho deve ficar em vermelho com um número de mensagens em branco/preto (dependendo do tema).
+   - Quando o usuário clicar no sininho abre um popup mostrando todas as mensagens novas
+   - Mensagens com mais de 48h são setadas como antigas e não são mais mostradas no sininho.

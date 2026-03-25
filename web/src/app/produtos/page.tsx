@@ -17,6 +17,7 @@ import { ProductDetailModal } from '@/components/produtos/ProductDetailModal'
 import { DividendModal } from '@/components/produtos/DividendModal'
 import { DeleteProductModal } from '@/components/produtos/DeleteProductModal'
 import { ReactivateProductModal } from '@/components/produtos/ReactivateProductModal'
+import { PastMonthWarningModal } from '@/components/produtos/PastMonthWarningModal'
 import {
   mockProducts,
   mockEntries,
@@ -44,6 +45,7 @@ import {
   setLiquidityOptions as storeSetLiquidityOptions,
   getDividends,
   setDividends as storeSetDividends,
+  upsertAggregatedProducts,
 } from '@/lib/mock-store'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
 import { useYear, CURRENT_YEAR, CURRENT_MONTH, AVAILABLE_YEARS } from '@/lib/year-context'
@@ -125,6 +127,22 @@ export default function ProdutosPage() {
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
   const [reactivateProductId, setReactivateProductId] = useState<string | null>(null)
   const [showClosed, setShowClosed] = useState(false)
+  const [pastMonthWarning, setPastMonthWarning] = useState<{
+    mode: 'create' | 'edit' | 'delete' | 'import'
+    onConfirm: () => void
+  } | null>(null)
+
+  function isPastMonth() {
+    return selectedYear * 12 + selectedMonth < CURRENT_YEAR * 12 + CURRENT_MONTH
+  }
+
+  function guardPastMonth(mode: 'create' | 'edit' | 'delete', action: () => void) {
+    if (isPastMonth()) {
+      setPastMonthWarning({ mode, onConfirm: () => { setPastMonthWarning(null); action() } })
+    } else {
+      action()
+    }
+  }
 
   // Previous month/year
   const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
@@ -313,6 +331,14 @@ export default function ProdutosPage() {
         }))
       return [...withoutDest, ...copied]
     })
+
+    // Recalcula os agregados (Ações/FIIs) com preços atuais em cache
+    if (email) {
+      upsertAggregatedProducts(email, selectedMonth, selectedYear)
+      setEntriesState(getProductEntries(email))
+      setProductsState(storeGetProducts(email))
+    }
+
     setCopyModalOpen(false)
   }
 
@@ -370,7 +396,7 @@ export default function ProdutosPage() {
     <div className="flex items-center gap-2">
       <button
         className="btn-ghost"
-        onClick={() => setImportOpen(true)}
+        onClick={() => guardPastMonth('import', () => setImportOpen(true))}
         title="Importar CSV"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -380,7 +406,7 @@ export default function ProdutosPage() {
         </svg>
         Importar CSV
       </button>
-      <button className="btn-brand" onClick={() => setModal({ open: true, mode: 'create' })}>
+      <button className="btn-brand" onClick={() => guardPastMonth('create', () => setModal({ open: true, mode: 'create' }))}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
@@ -513,10 +539,10 @@ export default function ProdutosPage() {
                 products={products}
                 assetClasses={assetClasses}
                 institutions={institutions}
-                onEdit={productId => setModal({ open: true, mode: 'edit', productId })}
+                onEdit={productId => guardPastMonth('edit', () => setModal({ open: true, mode: 'edit', productId }))}
                 onDetail={setDetailProductId}
                 onDividend={setDividendProductId}
-                onDelete={setDeleteProductId}
+                onDelete={productId => guardPastMonth('delete', () => setDeleteProductId(productId))}
                 onReactivate={setReactivateProductId}
                 onAggregated={(institutionId, assetClassId) =>
                   router.push(`/acoes?institution=${institutionId}&assetClass=${assetClassId}`)
@@ -662,6 +688,16 @@ export default function ProdutosPage() {
           />
         )
       })()}
+      {/* Popup danger zone — mês passado */}
+      {pastMonthWarning && (
+        <PastMonthWarningModal
+          month={selectedMonth}
+          year={selectedYear}
+          mode={pastMonthWarning.mode}
+          onCancel={() => setPastMonthWarning(null)}
+          onConfirm={pastMonthWarning.onConfirm}
+        />
+      )}
     </AppShell>
   )
 }

@@ -146,15 +146,18 @@ export function CategoryGroup({
               const assetClass  = product ? assetClasses.find(a => a.id === product.assetClassId) : undefined
               const institution = product ? institutions.find(i => i.id === product.institutionId) : undefined
 
-              if (!product || !assetClass || !institution) return null
+              if (!product) return null
+
+              const resolvedAssetClass  = assetClass  ?? { id: product.assetClassId,  name: '?', categoryId: '' }
+              const resolvedInstitution = institution ?? { id: product.institutionId, name: '?' }
 
               return (
                 <ProductRow
                   key={entry.id}
                   entry={entry}
                   product={product}
-                  assetClass={assetClass}
-                  institution={institution}
+                  assetClass={resolvedAssetClass}
+                  institution={resolvedInstitution}
                   onEdit={() => onEdit(product.id)}
                   onDetail={() => onDetail(product.id)}
                   onDividend={() => onDividend(product.id)}
