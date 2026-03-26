@@ -31,6 +31,7 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Em Andamento
 
+
 ---
 
 ## Geral
@@ -39,11 +40,7 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Dashboard
 
-- [ ] Criar novo item de menu chamado dividendos
-
 ## Produtos
-
-- [ ] Criar busca por nome do produto, mesma linha dos filtros.
 
 ---
 
@@ -57,20 +54,21 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Ações
 
-- [ ] Estado inicial vazio: quando o usuário não tem nenhuma ação cadastrada, exibir mensagem orientando com botão "Adicionar primeira ação".
 - [ ] Em ações criar um gráfico de evolução da ação apenas com dados do yahoo finance. (pensar depois como algum dado nosso da ação pode ser útil pra interferir no gráfico, como data ou qtd)
 
 ---
 
 ## Dividendos
 
-- [ ] Criar uma área para acompanhar dividendos, seja de ações, fundos ou fiis.
-      Esta área vai mostrar o consolidado recebido de dividendos mês a mês, últimos 12 meses do ano selecionado. Se ano atual, mostra os últimos 12 meses; se ano antigo, mostra os 12 meses do ano. A tela segue o mesmo estilo da área consolidado mensal. Filtros somente de instituições, não tem categorias. Nas colunas vai ter o mês/ano, percentual de evolução comparado com o valor total do mês anterior (se não tiver nada no mês anterior, mostra um tracinho) e o valor total do dividendo. Ao clicar na linha (toda a linha é clicável) abre popup mostrando todos os produtos que geraram dividendos naquele mês, com ordem de maior dividendo pro menor, agrupado por instituição. Nessa lista mostra o ativo, a instituição e o valor do dividendo (dividendo total = dividendo + jcp + outros). Tem um botão de fechar o popup ou ao clicar fora ele volta pra lista.
-- [ ] Pensar em como a integração produtos / ações / fiis vai impactar esta área. Produtos são mês a mês, ações é só atual.
+## Liquidez
+
+- [ ] Criar área de produtos por liquidez.
 
 ---
 
 ## Mock
+
+- [x] Fazer um teste de carregamento com o mock totalmente zerado.
 
 - [ ] Ajustar o mock para que na criação dos produtos ele não crie produtos agregados como produtos normais.
 
@@ -82,16 +80,14 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Mock inicial - fase de teste
 
-- Ao criar um novo usuário os mocks devem gerar informação de produtos de abril/2024 até o mês/ano atual. Cada mês, iniciando em abril/2024 deve ser a evolução do anterior, com mais produtos e valores mais altos, até um total no mês/ano atual de 1 milhão de reais e 25 produtos.
-- O mock de categorias, instituições e classes de ativos e liquidez deve buscar as mais usadas no mercado financeiro.
+- [x] Ao criar um novo usuário os mocks devem gerar informação de produtos de abril/2024 até o mês/ano atual. Cada mês, iniciando em abril/2024 deve ser a evolução do anterior, com mais produtos e valores mais altos, até um total no mês/ano atual de 1 milhão de reais e 25 produtos.
+- [x] O mock de categorias, instituições e classes de ativos e liquidez deve buscar as mais usadas no mercado financeiro.
 
 ---
 
 # FASE 2
 
 ## Admin
-
-- Criar área de administração com ajustes como categorias/instituições/classe de ativos fixas, cores, temas etc.
 
 ---
 
@@ -107,6 +103,13 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 # CONCLUÍDOS - [x]
 
+- [x] 2026-03-26 — Criar busca por nome do produto, mesma linha dos filtros.
+- [x] 2026-03-26 — Criar uma área para acompanhar dividendos, seja de ações, fundos ou fiis.
+      Esta área vai mostrar o consolidado recebido de dividendos mês a mês, últimos 12 meses do ano selecionado. Se ano atual, mostra os últimos 12 meses; se ano antigo, mostra os 12 meses do ano. A tela segue o mesmo estilo da área consolidado mensal. Filtros somente de instituições, não tem categorias. Nas colunas vai ter o mês/ano, percentual de evolução comparado com o valor total do mês anterior (se não tiver nada no mês anterior, mostra um tracinho) e o valor total do dividendo. Ao clicar na linha (toda a linha é clicável) abre popup mostrando todos os produtos que geraram dividendos naquele mês, com ordem de maior dividendo pro menor, agrupado por instituição. Nessa listamostra a instituição, o ativo e o valor do dividendo (dividendo total = dividendo + jcp + outros). Tem um botão de fechar o popup ou ao clicar fora ele volta pra lista.
+- [x] 2026-03-26 — Ao fazer o agregado de ações virar um produto o sistema deve contabilizar os dividendos do agregado e colocar no produto. Por exemplo se itub4 e petr4, que são ações da instituição Clear, receberem dividendos, quando o sistema atualizar os produtos agregados, o dividendos recebidos por essas ações, no mês em questão, serão somados ao produto agregado.
+- [x] 2026-03-26 — Ver a área de dominio sessão dividendos para entender o seu funcionamento.
+- [x] 2026-03-26 — Criar novo item de menu chamado dividendos.
+- [x] 2026-03-26 — Estado inicial vazio: quando o usuário não tem nenhuma ação cadastrada, exibir mensagem orientando com botão "Adicionar primeira ação".
 - [x] 2026-03-24 15:00 — O mecanismo de verificação que testa se o mês atual tem produtos permanece.
 - [x] 2026-03-24 15:00 — Os campos aporte e retirada não são copiados para o mês seguinte — são eventos pontuais do mês.
 - [x] 2026-03-24 15:00 — Ao copiar do mês anterior, o sistema tenta recuperar dados do Yahoo Finance para montar os agregados corretamente no mês atual.
@@ -140,7 +143,6 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 # FUTURO? - [+]
 
 - [+] Classe de Ativos — Implementar o conceito de ativo/inativo para classes de ativos e categorias. Uma classe ou categoria inativa não aparece nos formulários de cadastro/edição de produtos, mas continua associada aos produtos existentes sem quebrar histórico. Isso substitui a necessidade de remover registros em uso.
-- [+] Copiar do mês anterior — Ações individuais não são copiadas: elas já existem na carteira atual e não são mês a mês. O produto agregado ("Ações Clear") é copiado com os valores do mês e será sobrescrito na próxima atualização das cotações.
 
 ---
 

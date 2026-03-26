@@ -72,6 +72,7 @@ export default function ProdutosPage() {
 
   const [categoryFilter, setCategoryFilter] = useState('')
   const [institutionFilter, setInstitutionFilter] = useState('')
+  const [nameFilter, setNameFilter] = useState('')
   const [categories, setCategoriesState]         = useState<Category[]>(mockCategories)
   const [assetClasses, setAssetClassesState]     = useState<AssetClass[]>(mockAssetClasses)
   const [institutions, setInstitutionsState]     = useState<Institution[]>(mockInstitutions)
@@ -160,17 +161,19 @@ export default function ProdutosPage() {
     [entries, prevMonth, prevYear],
   )
 
-  // Apply category and institution filters
+  // Apply category, institution and name filters
   const filteredEntries = useMemo(() => {
+    const search = nameFilter.trim().toLowerCase()
     return monthEntries.filter(e => {
       const product = products.find(p => p.id === e.productId)
       if (!product) return false
       if (showClosed ? !e.isClosed : e.isClosed) return false
       if (categoryFilter && product.categoryId !== categoryFilter) return false
       if (institutionFilter && product.institutionId !== institutionFilter) return false
+      if (search && !product.name.toLowerCase().includes(search)) return false
       return true
     })
-  }, [monthEntries, products, categoryFilter, institutionFilter, showClosed])
+  }, [monthEntries, products, categoryFilter, institutionFilter, nameFilter, showClosed])
 
   // Dividend totals per product for the selected month — computed directly (no memo)
   const dividendByProduct: Record<string, number> = {}
@@ -459,6 +462,40 @@ export default function ProdutosPage() {
             onCategoryChange={val => { setCategoryFilter(val); setInstitutionFilter(''); setShowClosed(false) }}
             onInstitutionChange={val => { setInstitutionFilter(val); setShowClosed(false) }}
           />
+          <div style={{ position: 'relative' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}>
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar produto..."
+              value={nameFilter}
+              onChange={e => setNameFilter(e.target.value)}
+              style={{
+                padding: '7px 10px 7px 28px',
+                paddingRight: nameFilter ? 28 : 10,
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                outline: 'none',
+                width: 200,
+              }}
+            />
+            {nameFilter && (
+              <button
+                onClick={() => setNameFilter('')}
+                style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex', alignItems: 'center' }}
+                title="Limpar busca"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
           <label className="flex items-center gap-2 cursor-pointer flex-shrink-0" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             <input
               type="checkbox"

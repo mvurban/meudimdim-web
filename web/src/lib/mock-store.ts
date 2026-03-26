@@ -374,6 +374,54 @@ export function upsertAggregatedProducts(
   setProducts(email, products)
   setProductEntries(email, entries)
 
+  // ── Agregar dividendos das ações no produto agregado ──────────────
+  // Para cada grupo, soma os StockDividends das ações do grupo no mês/ano
+  // corrente e grava um único Dividend no produto agregado correspondente.
+  const stockDividends = getStockDividends(email)
+  const dividends = getDividends(email)
+
+  for (const [gKey, group] of groups) {
+    const groupAcoes = acoes.filter(a => `${a.assetClassId}__${a.institutionId}` === gKey)
+    const acaoIds = new Set(groupAcoes.map(a => a.id))
+
+    const total = stockDividends
+      .filter(sd => {
+        if (!acaoIds.has(sd.acaoId)) return false
+        const [y, m] = sd.date.split('-').map(Number)
+        return m === month && y === year
+      })
+      .reduce((acc, sd) => ({
+        dividendo: acc.dividendo + sd.dividendo,
+        jcp: acc.jcp + sd.jcp,
+        outros: acc.outros + sd.outros,
+      }), { dividendo: 0, jcp: 0, outros: 0 })
+
+    // Remove entrada anterior do produto agregado neste mês/ano
+    const aggProduct = products.find(
+      p => p.isAggregated && p.assetClassId === group.assetClassId && p.institutionId === group.institutionId
+    )
+    if (!aggProduct) continue
+
+    const divId = `agg_div_${aggProduct.id}_${year}${String(month).padStart(2, '0')}`
+    const filteredDivs = dividends.filter(d => d.id !== divId)
+
+    if (total.dividendo > 0 || total.jcp > 0 || total.outros > 0) {
+      filteredDivs.push({
+        id: divId,
+        productId: aggProduct.id,
+        date: `${year}-${String(month).padStart(2, '0')}-01`,
+        dividendo: Math.round(total.dividendo * 100) / 100,
+        jcp: Math.round(total.jcp * 100) / 100,
+        outros: Math.round(total.outros * 100) / 100,
+      })
+    }
+
+    setDividends(email, filteredDivs)
+    // Recarrega para próxima iteração
+    dividends.length = 0
+    dividends.push(...filteredDivs)
+  }
+
   // Record last refresh timestamp
   localStorage.setItem(key(email, 'lastRefresh'), new Date().toISOString())
 

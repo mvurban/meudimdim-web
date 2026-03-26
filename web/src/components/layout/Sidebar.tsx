@@ -19,6 +19,7 @@ const NAV = [
 const DASHBOARD_NAV = [
   { href: '/dashboard/overview',           icon: '▣', label: 'Overview'           },
   { href: '/dashboard/consolidado-mensal', icon: '◈', label: 'Consolidado Mensal' },
+  { href: '/dividendos',                   icon: '◎', label: 'Dividendos'          },
 ]
 
 const CONFIG_NAV = [

@@ -348,7 +348,7 @@ function AcoesPageInner() {
           <option value="">Todos tipos</option>
           {assetClasses.map(ac => <option key={ac.id} value={ac.id}>{ac.name}</option>)}
         </select>
-        <div style={{ position: 'relative', marginLeft: 'auto' }}>
+        <div style={{ position: 'relative' }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}>
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -483,8 +483,15 @@ function AcoesPageInner() {
           <tbody>
             {filteredItems.length === 0 && (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-                  {items.length === 0 ? 'Nenhuma ação cadastrada' : 'Nenhum resultado para os filtros selecionados'}
+                <td colSpan={9} style={{ textAlign: 'center', padding: '48px 0' }}>
+                  {items.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Você ainda não tem nenhuma ação cadastrada.</span>
+                      <button onClick={startAdd} style={btnStyle('#22c55e')}>+ Adicionar primeira ação</button>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nenhum resultado para os filtros selecionados</span>
+                  )}
                 </td>
               </tr>
             )}
