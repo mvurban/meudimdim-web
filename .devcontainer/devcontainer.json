@@ -6,6 +6,7 @@
   "shutdownAction": "stopCompose",
   "forwardPorts": [3000],
 
+  "initializeCommand": "docker network inspect meudimdim > nul 2>&1 || docker network create meudimdim",
   "postCreateCommand": "npm install -g npm@11.10.0 && npm --prefix /app/web install",
 
   "customizations": {

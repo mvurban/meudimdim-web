@@ -12,16 +12,9 @@ export interface User {
 // ─────────────────────────────────────────────
 // REFERENCE TABLES (admin)
 // ─────────────────────────────────────────────
-export type CategoryName =
-  | 'Renda Fixa'
-  | 'Multimercado'
-  | 'Renda Variável'
-  | 'Internacional'
-  | 'Commodities'
-
 export interface Category {
   id: string
-  name: CategoryName
+  name: string
   color: string // hex used in charts
 }
 
@@ -208,7 +201,7 @@ export interface MonthSummary {
 }
 
 export interface AllocationByCategory {
-  category: CategoryName
+  category: string
   value: number
   pct: number
   color: string

@@ -2,37 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getCategories, setCategories, getAssetClasses } from '@/lib/mock-store'
-import type { Category, CategoryName } from '@/types'
-
-const FIXED_IDS = ['cat1', 'cat2', 'cat3', 'cat4', 'cat5']
+import { api } from '@/lib/api'
+import type { Category } from '@/types'
 
 type FormState = { name: string; color: string }
 const EMPTY: FormState = { name: '', color: '#22c55e' }
 
 export default function CategoriasPage() {
-  const { data: session } = useSession()
-  const [items, setItemsState] = useState<Category[]>([])
+  const [items, setItems] = useState<Category[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
-  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; classesCount: number } | null>(null)
-
-  const email = session?.user?.email ?? null
+  const [removeModal, setRemoveModal] = useState<{ id: string; name: string } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (email) setItemsState(getCategories(email))
-  }, [email])
-
-  function setItems(updater: Category[] | ((prev: Category[]) => Category[])) {
-    setItemsState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      if (email) setCategories(email, next)
-      return next
-    })
-  }
+    api.get<Category[]>('/api/categories')
+      .then(setItems)
+      .finally(() => setLoading(false))
+  }, [])
 
   function startAdd() {
     setEditing(null)
@@ -52,29 +41,23 @@ export default function CategoriasPage() {
     setForm(EMPTY)
   }
 
-  function save() {
+  async function save() {
     if (!form.name.trim()) return
+    const body = { name: form.name.trim(), color: form.color }
+
     if (adding) {
-      const newItem: Category = {
-        id: `cat${Date.now()}`,
-        name: form.name.trim() as CategoryName,
-        color: form.color,
-      }
-      setItems(prev => [...prev, newItem])
+      const created = await api.post<Category>('/api/categories', body)
+      setItems(prev => [...prev, created])
     } else if (editing) {
-      setItems(prev => prev.map(c => c.id === editing ? { ...c, name: form.name.trim() as CategoryName, color: form.color } : c))
+      const updated = await api.put<Category>(`/api/categories/${editing}`, body)
+      setItems(prev => prev.map(c => c.id === editing ? updated : c))
     }
     cancel()
   }
 
-  function requestRemove(item: Category) {
-    if (FIXED_IDS.includes(item.id)) return
-    const classesCount = email ? getAssetClasses(email).filter(ac => ac.categoryId === item.id).length : 0
-    setRemoveModal({ id: item.id, name: item.name, classesCount })
-  }
-
-  function confirmRemove() {
+  async function confirmRemove() {
     if (!removeModal) return
+    await api.delete(`/api/categories/${removeModal.id}`)
     setItems(prev => prev.filter(c => c.id !== removeModal.id))
     setRemoveModal(null)
   }
@@ -130,55 +113,48 @@ export default function CategoriasPage() {
       )}
 
       <div style={cardStyle}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <th style={thStyle}>Cor</th>
-              <th style={thStyle}>Nome</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(item => {
-              const isFixed = FIXED_IDS.includes(item.id)
-              return (
+        {loading ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={thStyle}>Cor</th>
+                <th style={thStyle}>Nome</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(item => (
                 <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={tdStyle}>
                     <div style={{ width: 20, height: 20, borderRadius: 5, background: item.color }} />
                   </td>
-                  <td style={tdStyle}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      {item.name}
-                      {isFixed && (
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, letterSpacing: '0.5px',
-                          padding: '2px 7px', borderRadius: 20,
-                          background: '#a78bfa22', color: '#a78bfa',
-                          textTransform: 'uppercase',
-                        }}>
-                          Sistema
-                        </span>
-                      )}
-                    </span>
-                  </td>
+                  <td style={tdStyle}>{item.name}</td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
                       <IconEdit />
                     </button>
                     <button
-                      onClick={() => requestRemove(item)}
-                      style={{ ...actionBtn, color: isFixed ? 'var(--text-muted)' : 'var(--danger)', opacity: isFixed ? 0.35 : 1, cursor: isFixed ? 'not-allowed' : 'pointer' }}
-                      title={isFixed ? 'Categoria de sistema — não pode ser removida' : 'Excluir'}
-                      disabled={isFixed}
+                      onClick={() => setRemoveModal({ id: item.id, name: item.name })}
+                      style={{ ...actionBtn, color: 'var(--danger)' }}
+                      title="Excluir"
                     >
                       <IconTrash />
                     </button>
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={3} style={{ ...tdStyle, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
+                    Nenhuma categoria cadastrada
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {removeModal && createPortal(
@@ -193,30 +169,13 @@ export default function CategoriasPage() {
                 <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{removeModal.name}</p>
               </div>
             </div>
-
-            {removeModal.classesCount > 0 ? (
-              <>
-                <div style={{ padding: '12px 14px', borderRadius: 8, marginBottom: 20, background: '#ef444415', border: '1px solid #ef444430' }}>
-                  <p style={{ margin: 0, fontSize: 13, color: '#f87171', lineHeight: 1.5 }}>
-                    Esta categoria está associada a <strong>{removeModal.classesCount} classe{removeModal.classesCount > 1 ? 's' : ''} de ativo</strong>.
-                    Remova ou reclassifique {removeModal.classesCount > 1 ? 'essas classes' : 'essa classe'} antes de excluir esta categoria.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setRemoveModal(null)} style={btnStyle('#22c55e')}>Entendi</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  Essa ação é permanente e não pode ser desfeita.
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                  <button onClick={() => setRemoveModal(null)} style={btnStyle('var(--bg-elevated)')}>Cancelar</button>
-                  <button onClick={confirmRemove} style={btnStyle('#ef4444')}>Remover</button>
-                </div>
-              </>
-            )}
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Essa ação é permanente e não pode ser desfeita.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setRemoveModal(null)} style={btnStyle('var(--bg-elevated)')}>Cancelar</button>
+              <button onClick={confirmRemove} style={btnStyle('#ef4444')}>Remover</button>
+            </div>
           </div>
         </div>,
         document.body

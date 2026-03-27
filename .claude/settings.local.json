@@ -14,7 +14,10 @@
       "Bash(find C:/Projetos/mvurban/meudimdim/meudimdim-web/web/src -name *.ts)",
       "Bash(python3:*)",
       "Bash(node:*)",
-      "Bash(grep -l 'use client' C:Projetosmvurbanmeudimdimmeudimdim-webwebsrcapp/**/*.tsx)"
+      "Bash(grep -l 'use client' C:Projetosmvurbanmeudimdimmeudimdim-webwebsrcapp/**/*.tsx)",
+      "Bash(docker network:*)",
+      "Bash(docker exec:*)",
+      "Bash(find /c/Projetos/mvurban/meudimdim-web/web/src -type f \\\\\\(-name *category* -o -name *categoria* \\\\\\))"
     ]
   }
 }
