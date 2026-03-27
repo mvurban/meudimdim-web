@@ -24,10 +24,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             avatar: user.image,
           }),
         })
-      } catch {
+      } catch (err) {
+        console.error("[auth] /auth/register falhou:", err)
         // Não bloquear login se API estiver indisponível
       }
       return true
+    },
+    async jwt({ token, account }) {
+      // Na primeira autenticação, account está disponível com o id_token do Google
+      if (account?.id_token) {
+        token.idToken = account.id_token
+      }
+      return token
+    },
+    async session({ session, token }) {
+      session.idToken = token.idToken as string | undefined
+      return session
     },
   },
 })

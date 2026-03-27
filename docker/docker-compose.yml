@@ -9,7 +9,7 @@ services:
     volumes:
       - ..:/app
       - /app/web/node_modules
-      - claude_data:/root/.claude 
+      - claude_data:/root/.claude
       - claude_config:/root/.config
     working_dir: /app/web
     command: sleep infinity
@@ -18,7 +18,14 @@ services:
     environment:
       - NODE_ENV=development
       - SHELL=/bin/bash
+    networks:
+      - meudimdim
+
+networks:
+  meudimdim:
+    name: meudimdim
+
 volumes:
-  claude_data: 
+  claude_data:
   claude_config:
   
