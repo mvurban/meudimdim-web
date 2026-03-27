@@ -17,7 +17,12 @@
       "Bash(grep -l 'use client' C:Projetosmvurbanmeudimdimmeudimdim-webwebsrcapp/**/*.tsx)",
       "Bash(docker network:*)",
       "Bash(docker exec:*)",
-      "Bash(find /c/Projetos/mvurban/meudimdim-web/web/src -type f \\\\\\(-name *category* -o -name *categoria* \\\\\\))"
+      "Bash(find /c/Projetos/mvurban/meudimdim-web/web/src -type f \\\\\\(-name *category* -o -name *categoria* \\\\\\))",
+      "Bash(mv src:*)",
+      "Bash(mv package.json api/package.json)",
+      "Bash(mv package-lock.json api/package-lock.json)",
+      "Bash(mv tsconfig.json api/tsconfig.json)",
+      "Bash(mv .env api/.env)"
     ]
   }
 }
