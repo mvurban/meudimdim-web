@@ -2,39 +2,31 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getAssetClasses, setAssetClasses, getCategories, getProducts } from '@/lib/mock-store'
+import { api } from '@/lib/api'
 import type { AssetClass, Category } from '@/types'
 
 type FormState = { name: string; categoryId: string }
 const EMPTY: FormState = { name: '', categoryId: '' }
 
 export default function ClassesPage() {
-  const { data: session } = useSession()
-  const [items, setItemsState] = useState<AssetClass[]>([])
+  const [items, setItems] = useState<AssetClass[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
-  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; productsCount: number } | null>(null)
-
-  const email = session?.user?.email ?? null
+  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; blocked?: boolean } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (email) {
-      setItemsState(getAssetClasses(email))
-      setCategories(getCategories(email))
-    }
-  }, [email])
-
-  function setItems(updater: AssetClass[] | ((prev: AssetClass[]) => AssetClass[])) {
-    setItemsState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      if (email) setAssetClasses(email, next)
-      return next
-    })
-  }
+    api.get<Category[]>('/api/categories')
+      .then(setCategories)
+      .catch(err => console.error('categories:', err))
+    api.get<AssetClass[]>('/api/assetclasses')
+      .then(setItems)
+      .catch(err => console.error('assetclasses:', err))
+      .finally(() => setLoading(false))
+  }, [])
 
   function getCategoryName(id: string) {
     return categories.find(c => c.id === id)?.name ?? '—'
@@ -62,31 +54,28 @@ export default function ClassesPage() {
     setForm(EMPTY)
   }
 
-  function save() {
+  async function save() {
     if (!form.name.trim() || !form.categoryId) return
+    const body = { name: form.name.trim(), categoryId: form.categoryId }
     if (adding) {
-      const newItem: AssetClass = {
-        id: `ac${Date.now()}`,
-        name: form.name.trim(),
-        categoryId: form.categoryId,
-      }
-      setItems(prev => [...prev, newItem])
+      const created = await api.post<AssetClass>('/api/assetclasses', body)
+      setItems(prev => [...prev, created])
     } else if (editing) {
-      setItems(prev => prev.map(c => c.id === editing ? { ...c, name: form.name.trim(), categoryId: form.categoryId } : c))
+      const updated = await api.put<AssetClass>(`/api/assetclasses/${editing}`, body)
+      setItems(prev => prev.map(c => c.id === editing ? updated : c))
     }
     cancel()
   }
 
-  function requestRemove(item: AssetClass) {
-    if (item.isAcao) return
-    const productsCount = email ? getProducts(email).filter(p => p.assetClassId === item.id).length : 0
-    setRemoveModal({ id: item.id, name: item.name, productsCount })
-  }
-
-  function confirmRemove() {
+  async function confirmRemove() {
     if (!removeModal) return
-    setItems(prev => prev.filter(c => c.id !== removeModal.id))
-    setRemoveModal(null)
+    try {
+      await api.delete(`/api/assetclasses/${removeModal.id}`)
+      setItems(prev => prev.filter(c => c.id !== removeModal.id))
+      setRemoveModal(null)
+    } catch {
+      setRemoveModal(prev => prev ? { ...prev, blocked: true } : null)
+    }
   }
 
   return (
@@ -136,65 +125,76 @@ export default function ClassesPage() {
       )}
 
       <div style={cardStyle}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <th style={thStyle}>Nome</th>
-              <th style={thStyle}>Categoria</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...items].sort((a, b) => {
-              const idxA = categories.findIndex(c => c.id === a.categoryId)
-              const idxB = categories.findIndex(c => c.id === b.categoryId)
-              if (idxA !== idxB) return idxA - idxB
-              return a.name.localeCompare(b.name, 'pt-BR')
-            }).map(item => (
-              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={tdStyle}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    {item.name}
-                    {item.isAcao && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, letterSpacing: '0.5px',
-                        padding: '2px 7px', borderRadius: 20,
-                        background: '#a78bfa22', color: '#a78bfa',
-                        textTransform: 'uppercase',
-                      }}>
-                        Sistema
-                      </span>
-                    )}
-                  </span>
-                </td>
-                <td style={tdStyle}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '3px 10px', borderRadius: 20, fontSize: 12,
-                    background: `${getCategoryColor(item.categoryId)}22`,
-                    color: getCategoryColor(item.categoryId),
-                    fontWeight: 500,
-                  }}>
-                    {getCategoryName(item.categoryId)}
-                  </span>
-                </td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>
-                  <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
-                    <IconEdit />
-                  </button>
-                  <button
-                    onClick={() => requestRemove(item)}
-                    style={{ ...actionBtn, color: item.isAcao ? 'var(--text-muted)' : 'var(--danger)', opacity: item.isAcao ? 0.35 : 1, cursor: item.isAcao ? 'not-allowed' : 'pointer' }}
-                    title={item.isAcao ? 'Classe de sistema — não pode ser removida' : 'Excluir'}
-                    disabled={item.isAcao}
-                  >
-                    <IconTrash />
-                  </button>
-                </td>
+        {loading ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={thStyle}>Nome</th>
+                <th style={thStyle}>Categoria</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {[...items].sort((a, b) => {
+                const idxA = categories.findIndex(c => c.id === a.categoryId)
+                const idxB = categories.findIndex(c => c.id === b.categoryId)
+                if (idxA !== idxB) return idxA - idxB
+                return a.name.localeCompare(b.name, 'pt-BR')
+              }).map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={tdStyle}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      {item.name}
+                      {item.isAcao && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, letterSpacing: '0.5px',
+                          padding: '2px 7px', borderRadius: 20,
+                          background: '#a78bfa22', color: '#a78bfa',
+                          textTransform: 'uppercase',
+                        }}>
+                          Sistema
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '3px 10px', borderRadius: 20, fontSize: 12,
+                      background: `${getCategoryColor(item.categoryId)}22`,
+                      color: getCategoryColor(item.categoryId),
+                      fontWeight: 500,
+                    }}>
+                      {getCategoryName(item.categoryId)}
+                    </span>
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                    <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
+                      <IconEdit />
+                    </button>
+                    <button
+                      onClick={() => !item.isAcao && setRemoveModal({ id: item.id, name: item.name })}
+                      style={{ ...actionBtn, color: item.isAcao ? 'var(--text-muted)' : 'var(--danger)', opacity: item.isAcao ? 0.35 : 1, cursor: item.isAcao ? 'not-allowed' : 'pointer' }}
+                      title={item.isAcao ? 'Classe de sistema — não pode ser removida' : 'Excluir'}
+                      disabled={item.isAcao}
+                    >
+                      <IconTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={3} style={{ ...tdStyle, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
+                    Nenhuma classe cadastrada
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {removeModal && createPortal(
@@ -213,15 +213,15 @@ export default function ClassesPage() {
               </div>
             </div>
 
-            {removeModal.productsCount > 0 ? (
+            {removeModal.blocked ? (
               <>
                 <div style={{
                   padding: '12px 14px', borderRadius: 8, marginBottom: 20,
                   background: '#ef444415', border: '1px solid #ef444430',
                 }}>
                   <p style={{ margin: 0, fontSize: 13, color: '#f87171', lineHeight: 1.5 }}>
-                    Esta classe está associada a <strong>{removeModal.productsCount} produto{removeModal.productsCount > 1 ? 's' : ''}</strong>.
-                    Remova ou reclassifique {removeModal.productsCount > 1 ? 'esses produtos' : 'esse produto'} antes de excluir esta classe.
+                    Esta classe está associada a produtos existentes.
+                    Remova ou reclassifique esses produtos antes de excluir esta classe.
                   </p>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

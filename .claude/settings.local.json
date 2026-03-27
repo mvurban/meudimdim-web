@@ -22,7 +22,9 @@
       "Bash(mv package.json api/package.json)",
       "Bash(mv package-lock.json api/package-lock.json)",
       "Bash(mv tsconfig.json api/tsconfig.json)",
-      "Bash(mv .env api/.env)"
+      "Bash(mv .env api/.env)",
+      "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-web -type d -name *classe* -o -type d -name *class*)",
+      "Bash(grep -n \"assetClass\\\\|classe.*ativo\\\\|ClassesPage\" /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src/components -r --include=*.tsx)"
     ]
   }
 }
