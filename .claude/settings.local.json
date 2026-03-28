@@ -24,7 +24,9 @@
       "Bash(mv tsconfig.json api/tsconfig.json)",
       "Bash(mv .env api/.env)",
       "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-web -type d -name *classe* -o -type d -name *class*)",
-      "Bash(grep -n \"assetClass\\\\|classe.*ativo\\\\|ClassesPage\" /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src/components -r --include=*.tsx)"
+      "Bash(grep -n \"assetClass\\\\|classe.*ativo\\\\|ClassesPage\" /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src/components -r --include=*.tsx)",
+      "Bash(find C:/Projetos/mvurban/meudimdim/meudimdim-api -name *.ts -not -path */node_modules/*)",
+      "Bash(npx prisma:*)"
     ]
   }
 }

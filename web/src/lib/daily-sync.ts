@@ -17,7 +17,7 @@ export function hasDoneDailySyncToday(email: string): boolean {
 
 export async function runDailySyncIfNeeded(
   email: string,
-  addNotification: (text: string) => void,
+  addNotification: (text: string) => Promise<void>,
 ): Promise<void> {
   if (hasDoneDailySyncToday(email)) return
 

@@ -124,7 +124,7 @@ function NotificationBell() {
                 >
                   <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{n.text}</p>
                   <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {new Date(n.date).toLocaleString('pt-BR')}
+                    {new Date(n.createdAt).toLocaleString('pt-BR')}
                   </p>
                 </div>
               ))

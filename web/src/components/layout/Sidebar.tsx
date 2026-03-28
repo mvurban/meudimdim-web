@@ -54,12 +54,14 @@ export function Sidebar() {
     }
   }, [pathname])
 
+  const email = session?.user?.email ?? null
+
   useEffect(() => {
-    const email = session?.user?.email
     if (!email) return
     initUserData(email)
+
     runDailySyncIfNeeded(email, addNotification)
-  }, [session]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [email]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleExpanded() {
     setExpanded(v => {
