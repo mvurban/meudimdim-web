@@ -2,33 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getRegions, setRegions } from '@/lib/mock-store'
-import { mockProducts } from '@/lib/mock-data'
+import { api } from '@/lib/api'
 import type { Region } from '@/types'
 
 export default function RegioesConfigPage() {
-  const { data: session } = useSession()
-  const [items, setItemsState] = useState<Region[]>([])
+  const [items, setItems] = useState<Region[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
-  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; productsCount: number } | null>(null)
-
-  const email = session?.user?.email ?? null
+  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; blocked?: boolean } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (email) setItemsState(getRegions(email))
-  }, [email])
-
-  function setItems(updater: Region[] | ((prev: Region[]) => Region[])) {
-    setItemsState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      if (email) setRegions(email, next)
-      return next
-    })
-  }
+    api.get<Region[]>('/api/regions')
+      .then(setItems)
+      .catch(err => console.error('regions:', err))
+      .finally(() => setLoading(false))
+  }, [])
 
   function startAdd() {
     setEditing(null)
@@ -48,38 +39,40 @@ export default function RegioesConfigPage() {
     setName('')
   }
 
-  function save() {
+  async function save() {
     if (!name.trim()) return
+    const body = { name: name.trim() }
     if (adding) {
-      const newItem: Region = { id: `r${Date.now()}`, name: name.trim(), isDefault: false }
-      setItems(prev => [...prev, newItem])
+      const created = await api.post<Region>('/api/regions', body)
+      setItems(prev => [...prev, created])
     } else if (editing) {
-      setItems(prev => prev.map(i => i.id === editing ? { ...i, name: name.trim() } : i))
+      const updated = await api.put<Region>(`/api/regions/${editing}`, body)
+      setItems(prev => prev.map(i => i.id === editing ? updated : i))
     }
     cancel()
   }
 
-  function setDefault(id: string) {
-    setItems(prev => prev.map(i => ({ ...i, isDefault: i.id === id })))
+  async function setDefault(id: string) {
+    const updated = await api.patch<Region>(`/api/regions/${id}`, { isDefault: true })
+    setItems(prev => prev.map(i => i.id === id ? updated : { ...i, isDefault: false }))
   }
 
-  function requestRemove(item: Region) {
-    if (items.length <= 1) return
-    const productsCount = mockProducts.filter(p => p.regionId === item.id).length
-    setRemoveModal({ id: item.id, name: item.name, productsCount })
-  }
-
-  function confirmRemove() {
+  async function confirmRemove() {
     if (!removeModal) return
-    setItems(prev => {
-      const isRemovingDefault = prev.find(i => i.id === removeModal.id)?.isDefault ?? false
-      const remaining = prev.filter(i => i.id !== removeModal.id)
-      if (isRemovingDefault) {
-        return remaining.map((i, idx) => ({ ...i, isDefault: idx === 0 }))
-      }
-      return remaining
-    })
-    setRemoveModal(null)
+    try {
+      await api.delete(`/api/regions/${removeModal.id}`)
+      setItems(prev => {
+        const isRemovingDefault = prev.find(i => i.id === removeModal.id)?.isDefault ?? false
+        const remaining = prev.filter(i => i.id !== removeModal.id)
+        if (isRemovingDefault && remaining.length > 0) {
+          return remaining.map((i, idx) => ({ ...i, isDefault: idx === 0 }))
+        }
+        return remaining
+      })
+      setRemoveModal(null)
+    } catch {
+      setRemoveModal(prev => prev ? { ...prev, blocked: true } : null)
+    }
   }
 
   return (
@@ -120,71 +113,72 @@ export default function RegioesConfigPage() {
       )}
 
       <div style={cardStyle}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <th style={thStyle}>Nome</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(item => (
-              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={tdStyle}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {item.name}
-                    {item.isDefault && (
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        fontSize: 10, fontWeight: 600, letterSpacing: '0.5px',
-                        padding: '2px 8px', borderRadius: 99,
-                        background: 'rgba(34,197,94,0.12)', color: '#22c55e',
-                        border: '1px solid rgba(34,197,94,0.25)',
-                      }}>
-                        ★ Padrão
-                      </span>
+        {loading ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={thStyle}>Nome</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={tdStyle}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {item.name}
+                      {item.isDefault && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          fontSize: 10, fontWeight: 600, letterSpacing: '0.5px',
+                          padding: '2px 8px', borderRadius: 99,
+                          background: 'rgba(34,197,94,0.12)', color: '#22c55e',
+                          border: '1px solid rgba(34,197,94,0.25)',
+                        }}>
+                          ★ Padrão
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                    {!item.isDefault && (
+                      <button onClick={() => setDefault(item.id)} style={actionBtn} title="Definir como padrão">
+                        <IconStar />
+                      </button>
                     )}
-                  </span>
-                </td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>
-                  {!item.isDefault && (
-                    <button
-                      onClick={() => setDefault(item.id)}
-                      style={actionBtn}
-                      title="Definir como padrão"
-                    >
-                      <IconStar />
+                    <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
+                      <IconEdit />
                     </button>
-                  )}
-                  <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
-                    <IconEdit />
-                  </button>
-                  <button
-                    onClick={() => requestRemove(item)}
-                    disabled={items.length <= 1}
-                    style={{
-                      ...actionBtn,
-                      color: items.length <= 1 ? 'var(--text-muted)' : 'var(--danger)',
-                      opacity: items.length <= 1 ? 0.4 : 1,
-                      cursor: items.length <= 1 ? 'not-allowed' : 'pointer',
-                    }}
-                    title={items.length <= 1 ? 'Deve haver pelo menos uma região' : 'Excluir'}
-                  >
-                    <IconTrash />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={2} style={{ ...tdStyle, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
-                  Nenhuma região cadastrada.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    <button
+                      onClick={() => items.length > 1 && setRemoveModal({ id: item.id, name: item.name })}
+                      disabled={items.length <= 1}
+                      style={{
+                        ...actionBtn,
+                        color: items.length <= 1 ? 'var(--text-muted)' : 'var(--danger)',
+                        opacity: items.length <= 1 ? 0.4 : 1,
+                        cursor: items.length <= 1 ? 'not-allowed' : 'pointer',
+                      }}
+                      title={items.length <= 1 ? 'Deve haver pelo menos uma região' : 'Excluir'}
+                    >
+                      <IconTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={2} style={{ ...tdStyle, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
+                    Nenhuma região cadastrada.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
+
       {removeModal && createPortal(
         <div style={overlayStyle} onClick={() => setRemoveModal(null)}>
           <div style={modalStyle} onClick={e => e.stopPropagation()}>
@@ -198,12 +192,12 @@ export default function RegioesConfigPage() {
               </div>
             </div>
 
-            {removeModal.productsCount > 0 ? (
+            {removeModal.blocked ? (
               <>
                 <div style={{ padding: '12px 14px', borderRadius: 8, marginBottom: 20, background: '#ef444415', border: '1px solid #ef444430' }}>
                   <p style={{ margin: 0, fontSize: 13, color: '#f87171', lineHeight: 1.5 }}>
-                    Esta região está associada a <strong>{removeModal.productsCount} produto{removeModal.productsCount > 1 ? 's' : ''}</strong>.
-                    Remova ou reclassifique {removeModal.productsCount > 1 ? 'esses produtos' : 'esse produto'} antes de excluir esta região.
+                    Esta região está associada a produtos existentes.
+                    Remova ou reclassifique esses produtos antes de excluir esta região.
                   </p>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -333,9 +327,9 @@ function IconEdit() {
   )
 }
 
-function IconTrashLg() {
+function IconTrash() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6M14 11v6" />
@@ -344,9 +338,9 @@ function IconTrashLg() {
   )
 }
 
-function IconTrash() {
+function IconTrashLg() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6M14 11v6" />

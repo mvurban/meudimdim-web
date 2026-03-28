@@ -2,33 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { getInstitutions, setInstitutions, getAcoes } from '@/lib/mock-store'
-import { mockProducts } from '@/lib/mock-data'
+import { api } from '@/lib/api'
 import type { Institution } from '@/types'
 
 export default function InstituicoesConfigPage() {
-  const { data: session } = useSession()
-  const [items, setItemsState] = useState<Institution[]>([])
+  const [items, setItems] = useState<Institution[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
-  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; usageCount: number } | null>(null)
-
-  const email = session?.user?.email ?? null
+  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; blocked?: boolean } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (email) setItemsState(getInstitutions(email))
-  }, [email])
-
-  function setItems(updater: Institution[] | ((prev: Institution[]) => Institution[])) {
-    setItemsState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      if (email) setInstitutions(email, next)
-      return next
-    })
-  }
+    api.get<Institution[]>('/api/institutions')
+      .then(setItems)
+      .catch(err => console.error('institutions:', err))
+      .finally(() => setLoading(false))
+  }, [])
 
   function startAdd() {
     setEditing(null)
@@ -48,27 +39,28 @@ export default function InstituicoesConfigPage() {
     setName('')
   }
 
-  function save() {
+  async function save() {
     if (!name.trim()) return
+    const body = { name: name.trim() }
     if (adding) {
-      const newItem: Institution = { id: `i${Date.now()}`, name: name.trim() }
-      setItems(prev => [...prev, newItem])
+      const created = await api.post<Institution>('/api/institutions', body)
+      setItems(prev => [...prev, created])
     } else if (editing) {
-      setItems(prev => prev.map(i => i.id === editing ? { ...i, name: name.trim() } : i))
+      const updated = await api.put<Institution>(`/api/institutions/${editing}`, body)
+      setItems(prev => prev.map(i => i.id === editing ? updated : i))
     }
     cancel()
   }
 
-  function requestRemove(item: Institution) {
-    const productsCount = mockProducts.filter(p => p.institutionId === item.id).length
-    const acoesCount = email ? getAcoes(email).filter(a => a.institutionId === item.id).length : 0
-    setRemoveModal({ id: item.id, name: item.name, usageCount: productsCount + acoesCount })
-  }
-
-  function confirmRemove() {
+  async function confirmRemove() {
     if (!removeModal) return
-    setItems(prev => prev.filter(i => i.id !== removeModal.id))
-    setRemoveModal(null)
+    try {
+      await api.delete(`/api/institutions/${removeModal.id}`)
+      setItems(prev => prev.filter(i => i.id !== removeModal.id))
+      setRemoveModal(null)
+    } catch {
+      setRemoveModal(prev => prev ? { ...prev, blocked: true } : null)
+    }
   }
 
   return (
@@ -95,6 +87,7 @@ export default function InstituicoesConfigPage() {
                 placeholder="Ex: XP Investimentos"
                 style={inputStyle}
                 onKeyDown={e => e.key === 'Enter' && save()}
+                autoFocus
               />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -106,30 +99,46 @@ export default function InstituicoesConfigPage() {
       )}
 
       <div style={cardStyle}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <th style={thStyle}>Nome</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(item => (
-              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={tdStyle}>{item.name}</td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>
-                  <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
-                    <IconEdit />
-                  </button>
-                  <button onClick={() => requestRemove(item)} style={{ ...actionBtn, color: 'var(--danger)' }} title="Excluir">
-                    <IconTrash />
-                  </button>
-                </td>
+        {loading ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Carregando...</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={thStyle}>Nome</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={tdStyle}>{item.name}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                    <button onClick={() => startEdit(item)} style={actionBtn} title="Editar">
+                      <IconEdit />
+                    </button>
+                    <button
+                      onClick={() => setRemoveModal({ id: item.id, name: item.name })}
+                      style={{ ...actionBtn, color: 'var(--danger)' }}
+                      title="Excluir"
+                    >
+                      <IconTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={2} style={{ ...tdStyle, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
+                    Nenhuma instituição cadastrada.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
+
       {removeModal && createPortal(
         <div style={overlayStyle} onClick={() => setRemoveModal(null)}>
           <div style={modalStyle} onClick={e => e.stopPropagation()}>
@@ -143,12 +152,12 @@ export default function InstituicoesConfigPage() {
               </div>
             </div>
 
-            {removeModal.usageCount > 0 ? (
+            {removeModal.blocked ? (
               <>
                 <div style={{ padding: '12px 14px', borderRadius: 8, marginBottom: 20, background: '#ef444415', border: '1px solid #ef444430' }}>
                   <p style={{ margin: 0, fontSize: 13, color: '#f87171', lineHeight: 1.5 }}>
-                    Esta instituição está associada a <strong>{removeModal.usageCount} registro{removeModal.usageCount > 1 ? 's' : ''}</strong> (produtos ou ações).
-                    Remova ou reclassifique {removeModal.usageCount > 1 ? 'esses registros' : 'esse registro'} antes de excluir esta instituição.
+                    Esta instituição está associada a produtos ou ações existentes.
+                    Remova ou reclassifique esses registros antes de excluir esta instituição.
                   </p>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -270,9 +279,9 @@ function IconEdit() {
   )
 }
 
-function IconTrashLg() {
+function IconTrash() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6M14 11v6" />
@@ -281,9 +290,9 @@ function IconTrashLg() {
   )
 }
 
-function IconTrash() {
+function IconTrashLg() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6M14 11v6" />
