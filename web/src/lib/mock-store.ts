@@ -1,5 +1,6 @@
 import type { Category, AssetClass, Institution, Region, LiquidityOption, Dividend, BenchmarkEntry, StockDividend, Product, ProductEntry } from '@/types'
 import { mockCategories, mockAssetClasses, mockInstitutions, mockRegions, mockLiquidityOptions, mockDividends, mockBenchmarks, mockProducts, mockEntries } from './mock-data'
+import { api } from './api'
 
 // ─────────────────────────────────────────────
 // Ações (mock-only type — será substituído por API + Yahoo Finance)
@@ -258,131 +259,116 @@ export function setProductEntries(email: string, items: ProductEntry[]): void {
 
 // ─────────────────────────────────────────────
 // Aggregated products (Ações/FIIs auto-managed)
-// Creates or updates one Product per (assetClass × institution) pair
-// and sets a single ProductEntry for the given month/year with the
-// summed value from the AcaoItem portfolio.
+// Lê ações do mock (ainda não migradas) e escreve produtos/entries/dividends na API.
+// Resolve IDs reais da API por correspondência de nome com o mock.
 // ─────────────────────────────────────────────
-export function upsertAggregatedProducts(
+export async function upsertAggregatedProducts(
   email: string,
   month: number,
   year: number,
-): { upserted: number } {
+): Promise<{ upserted: number }> {
   const acoes = getAcoes(email)
-  const assetClasses = getAssetClasses(email)
-  const institutions = getInstitutions(email)
-  const regions = getRegions(email)
+  if (acoes.length === 0) return { upserted: 0 }
 
-  const defaultRegion = regions.find(r => r.isDefault) ?? regions[0]
-  const defaultLiquidityId = 'liq3' // D+2 — padrão para renda variável
+  const mockAcs = getAssetClasses(email)
+  const mockInsts = getInstitutions(email)
+  const stockDividends = getStockDividends(email)
 
-  // Group by (assetClassId, institutionId)
+  // Busca dados reais da API para resolver IDs
+  let apiAcs: AssetClass[] = []
+  let apiInsts: Institution[] = []
+  let apiRegions: Region[] = []
+  let apiLiqs: LiquidityOption[] = []
+  let apiProducts: Product[] = []
+
+  try {
+    ;[apiAcs, apiInsts, apiRegions, apiLiqs, apiProducts] = await Promise.all([
+      api.get<AssetClass[]>('/api/assetclasses'),
+      api.get<Institution[]>('/api/institutions'),
+      api.get<Region[]>('/api/regions'),
+      api.get<LiquidityOption[]>('/api/liquidity'),
+      api.get<Product[]>('/api/products'),
+    ])
+  } catch {
+    return { upserted: 0 }
+  }
+
+  const apiDefaultRegion = apiRegions.find(r => r.isDefault) ?? apiRegions[0]
+  const apiDefaultLiqId  = apiLiqs[0]?.id
+
+  // Group by (assetClassId, institutionId) — usando mock IDs das ações
   type GroupKey = string
-  const groups = new Map<GroupKey, { assetClassId: string; institutionId: string; totalBrl: number }>()
+  const groups = new Map<GroupKey, { mockAcId: string; mockInstId: string; totalBrl: number }>()
 
   for (const acao of acoes) {
     const gKey: GroupKey = `${acao.assetClassId}__${acao.institutionId}`
-    const existing = groups.get(gKey)
     const valueBrl = acao.quantidade * acao.precoAtual
+    const existing = groups.get(gKey)
     if (existing) {
       existing.totalBrl += valueBrl
     } else {
-      groups.set(gKey, { assetClassId: acao.assetClassId, institutionId: acao.institutionId, totalBrl: valueBrl })
+      groups.set(gKey, { mockAcId: acao.assetClassId, mockInstId: acao.institutionId, totalBrl: valueBrl })
     }
   }
 
-  const products = getProducts(email)
-  const entries = getProductEntries(email)
-
-  for (const [, group] of groups) {
-    const ac = assetClasses.find(a => a.id === group.assetClassId)
-    const inst = institutions.find(i => i.id === group.institutionId)
-    if (!ac || !inst) continue
-
-    const productName = `${ac.name} ${inst.name}`
-    const valueBrl = Math.round(group.totalBrl * 100) / 100
-
-    // Find or create aggregated product
-    let product = products.find(
-      p => p.isAggregated && p.assetClassId === group.assetClassId && p.institutionId === group.institutionId
-    )
-
-    if (!product) {
-      product = {
-        id: `agg_${group.assetClassId}_${group.institutionId}`,
-        name: productName,
-        categoryId: ac.categoryId,
-        assetClassId: group.assetClassId,
-        institutionId: group.institutionId,
-        regionId: defaultRegion?.id ?? 'r1',
-        currency: 'BRL',
-        liquidityId: defaultLiquidityId,
-        status: 'active',
-        createdAt: new Date().toISOString().slice(0, 10),
-        isAggregated: true,
-      }
-      products.push(product)
-    }
-
-    // Upsert entry for this month/year
-    const entryId = `agg_entry_${product.id}_${year}${String(month).padStart(2, '0')}`
-    const existingEntryIdx = entries.findIndex(e => e.productId === product!.id && e.month === month && e.year === year)
-
-    // Calc contribution/withdrawal vs previous month
-    const prevEntry = entries
-      .filter(e => e.productId === product!.id)
-      .filter(e => e.year < year || (e.year === year && e.month < month))
-      .sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month))[0]
-
-    const prevValue = prevEntry?.valueBrl ?? 0
-    const contribution = Math.max(0, Math.round((valueBrl - prevValue) * 100) / 100)
-    const withdrawal = Math.max(0, Math.round((prevValue - valueBrl) * 100) / 100)
-
-    const newEntry: ProductEntry = {
-      id: entryId,
-      productId: product.id,
-      month,
-      year,
-      contribution,
-      withdrawal,
-      returnPct: 0,
-      income: 0,
-      valueOriginal: valueBrl,
-      valueBrl,
-      valueUsd: 0,
-      valueFinal: valueBrl,
-      createdAt: new Date().toISOString().slice(0, 10),
-    }
-
-    if (existingEntryIdx >= 0) {
-      entries[existingEntryIdx] = newEntry
-    } else {
-      entries.push(newEntry)
-    }
-  }
-
-  // Produtos agregados sem ações correspondentes: remove a entrada do mês corrente.
-  // O produto em si é preservado para manter continuidade histórica.
-  const activeGroupKeys = new Set(groups.keys())
-  for (const p of products) {
-    if (!p.isAggregated) continue
-    const gKey = `${p.assetClassId}__${p.institutionId}`
-    if (activeGroupKeys.has(gKey)) continue
-    const idx = entries.findIndex(e => e.productId === p.id && e.month === month && e.year === year)
-    if (idx >= 0) entries.splice(idx, 1)
-  }
-
-  setProducts(email, products)
-  setProductEntries(email, entries)
-
-  // ── Agregar dividendos das ações no produto agregado ──────────────
-  // Para cada grupo, soma os StockDividends das ações do grupo no mês/ano
-  // corrente e grava um único Dividend no produto agregado correspondente.
-  const stockDividends = getStockDividends(email)
-  const dividends = getDividends(email)
+  let upserted = 0
 
   for (const [gKey, group] of groups) {
+    const mockAc   = mockAcs.find(a => a.id === group.mockAcId)
+    const mockInst = mockInsts.find(i => i.id === group.mockInstId)
+    if (!mockAc || !mockInst) continue
+
+    // Resolve IDs reais pelo nome
+    const apiAc   = apiAcs.find(a => a.name === mockAc.name)
+    const apiInst = apiInsts.find(i => i.name === mockInst.name)
+    if (!apiAc || !apiInst) continue
+
+    const valueBrl = Math.round(group.totalBrl * 100) / 100
+
+    // Find or create aggregated product na API
+    let aggProduct = apiProducts.find(
+      p => p.isAggregated && p.assetClassId === apiAc.id && p.institutionId === apiInst.id
+    )
+
+    if (!aggProduct) {
+      try {
+        aggProduct = await api.post<Product>('/api/products', {
+          name: `${mockAc.name} ${mockInst.name}`,
+          categoryId: apiAc.categoryId,
+          assetClassId: apiAc.id,
+          institutionId: apiInst.id,
+          regionId: apiDefaultRegion?.id,
+          liquidityId: apiDefaultLiqId,
+          currency: 'BRL',
+          isAggregated: true,
+        })
+        apiProducts.push(aggProduct)
+      } catch {
+        continue
+      }
+    }
+
+    // Upsert entry na API
+    try {
+      await api.put('/api/entries/upsert', {
+        productId: aggProduct.id,
+        month,
+        year,
+        contribution: 0,
+        withdrawal: 0,
+        returnPct: 0,
+        valueOriginal: valueBrl,
+        valueBrl,
+        valueUsd: 0,
+      })
+    } catch {
+      continue
+    }
+
+    // Agregar dividendos das ações do grupo
     const groupAcoes = acoes.filter(a => `${a.assetClassId}__${a.institutionId}` === gKey)
     const acaoIds = new Set(groupAcoes.map(a => a.id))
+    const monthStr = String(month).padStart(2, '0')
 
     const total = stockDividends
       .filter(sd => {
@@ -396,36 +382,44 @@ export function upsertAggregatedProducts(
         outros: acc.outros + sd.outros,
       }), { dividendo: 0, jcp: 0, outros: 0 })
 
-    // Remove entrada anterior do produto agregado neste mês/ano
-    const aggProduct = products.find(
-      p => p.isAggregated && p.assetClassId === group.assetClassId && p.institutionId === group.institutionId
-    )
-    if (!aggProduct) continue
-
-    const divId = `agg_div_${aggProduct.id}_${year}${String(month).padStart(2, '0')}`
-    const filteredDivs = dividends.filter(d => d.id !== divId)
-
     if (total.dividendo > 0 || total.jcp > 0 || total.outros > 0) {
-      filteredDivs.push({
-        id: divId,
-        productId: aggProduct.id,
-        date: `${year}-${String(month).padStart(2, '0')}-01`,
-        dividendo: Math.round(total.dividendo * 100) / 100,
-        jcp: Math.round(total.jcp * 100) / 100,
-        outros: Math.round(total.outros * 100) / 100,
-      })
+      try {
+        await api.put('/api/dividends/upsert', {
+          productId: aggProduct.id,
+          date: `${year}-${monthStr}-01`,
+          dividendo: Math.round(total.dividendo * 100) / 100,
+          jcp: Math.round(total.jcp * 100) / 100,
+          outros: Math.round(total.outros * 100) / 100,
+        })
+      } catch {
+        // silencioso
+      }
     }
 
-    setDividends(email, filteredDivs)
-    // Recarrega para próxima iteração
-    dividends.length = 0
-    dividends.push(...filteredDivs)
+    upserted++
   }
 
-  // Record last refresh timestamp
-  localStorage.setItem(key(email, 'lastRefresh'), new Date().toISOString())
+  // Agregados sem ações correspondentes: remove a entry do mês na API
+  for (const p of apiProducts) {
+    if (!p.isAggregated) continue
+    const stillActive = [...groups.values()].some(g => {
+      const apiAc   = apiAcs.find(a => a.id === p.assetClassId)
+      const apiInst = apiInsts.find(i => i.id === p.institutionId)
+      const mockAc  = mockAcs.find(a => a.name === apiAc?.name)
+      const mockInst = mockInsts.find(i => i.name === apiInst?.name)
+      return mockAc && mockInst && g.mockAcId === mockAc.id && g.mockInstId === mockInst.id
+    })
+    if (stillActive) continue
+    try {
+      const entries = await api.get<ProductEntry[]>(`/api/entries?productId=${p.id}&month=${month}&year=${year}`)
+      await Promise.all(entries.map(e => api.delete(`/api/entries/${e.id}`)))
+    } catch {
+      // silencioso
+    }
+  }
 
-  return { upserted: groups.size }
+  setLastRefresh(email, new Date().toISOString())
+  return { upserted }
 }
 
 export function getLastRefresh(email: string): string | null {

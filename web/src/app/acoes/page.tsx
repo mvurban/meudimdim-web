@@ -194,13 +194,13 @@ function AcoesPageInner() {
   }
 
   // Persiste acoes e recalcula agregados com os preços já em cache (sem Yahoo Finance)
-  function saveAcoesAndRecalc(newAcoes: AcaoItem[]) {
+  async function saveAcoesAndRecalc(newAcoes: AcaoItem[]) {
     if (!email) return
     setAcoes(email, newAcoes)
     setItemsState(newAcoes)
     try {
       const now = new Date()
-      upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
+      await upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
     } catch (e) {
       console.error('Erro ao recalcular agregados:', e)
     }
@@ -213,11 +213,11 @@ function AcoesPageInner() {
   }
 
   // Aplica novos preços, persiste e cria agregados — compartilhado entre modal e refresh silencioso
-  function applyRefreshResults(
+  async function applyRefreshResults(
     currentAcoes: AcaoItem[],
     updated: { id: string; precoFechamento: number; precoAtual: number }[],
     emailParam: string,
-  ): { upserted: number } {
+  ): Promise<{ upserted: number }> {
     const updatedAcoes = currentAcoes.map(a => {
       const u = updated.find(r => r.id === a.id)
       return u ? { ...a, precoFechamento: u.precoFechamento, precoAtual: u.precoAtual } : a
@@ -230,7 +230,7 @@ function AcoesPageInner() {
     let upserted = 0
     try {
       const now = new Date()
-      const result = upsertAggregatedProducts(emailParam, now.getMonth() + 1, now.getFullYear())
+      const result = await upsertAggregatedProducts(emailParam, now.getMonth() + 1, now.getFullYear())
       upserted = result.upserted
     } catch (e) {
       console.error('Erro ao criar produtos agregados:', e)
@@ -239,14 +239,14 @@ function AcoesPageInner() {
   }
 
   // Callback do modal de cotações (com progresso visual)
-  function handleRefreshDone(updated: { id: string; precoFechamento: number; precoAtual: number }[]) {
+  async function handleRefreshDone(updated: { id: string; precoFechamento: number; precoAtual: number }[]) {
     if (!email) return
-    const { upserted } = applyRefreshResults(items, updated, email)
+    const { upserted } = await applyRefreshResults(items, updated, email)
     setRefreshSummary({ tickers: updated.length, products: upserted })
   }
 
   // Refresh silencioso — sem modal, sem delay por ticker
-  function runSilentRefresh(currentAcoes: AcaoItem[], emailParam: string) {
+  async function runSilentRefresh(currentAcoes: AcaoItem[], emailParam: string) {
     setIsAutoRefreshing(true)
     const updated = currentAcoes
       .filter(() => Math.random() >= FAKE_ERROR_RATE)
@@ -254,7 +254,7 @@ function AcoesPageInner() {
         const { precoFechamento, precoAtual } = mockPrecos(a.precoFechamento || a.precoMedio)
         return { id: a.id, precoFechamento, precoAtual }
       })
-    applyRefreshResults(currentAcoes, updated, emailParam)
+    await applyRefreshResults(currentAcoes, updated, emailParam)
     setIsAutoRefreshing(false)
   }
 

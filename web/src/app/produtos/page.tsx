@@ -18,35 +18,8 @@ import { DividendModal } from '@/components/produtos/DividendModal'
 import { DeleteProductModal } from '@/components/produtos/DeleteProductModal'
 import { ReactivateProductModal } from '@/components/produtos/ReactivateProductModal'
 import { PastMonthWarningModal } from '@/components/produtos/PastMonthWarningModal'
-import {
-  mockProducts,
-  mockEntries,
-  mockCategories,
-  mockAssetClasses,
-  mockInstitutions,
-  mockRegions,
-  mockLiquidityOptions,
-  mockDividends,
-} from '@/lib/mock-data'
-import {
-  getProducts as storeGetProducts,
-  setProducts as storeSetProducts,
-  getProductEntries,
-  setProductEntries,
-  getCategories,
-  setCategories as storeSetCategories,
-  getAssetClasses,
-  setAssetClasses as storeSetAssetClasses,
-  getInstitutions,
-  setInstitutions as storeSetInstitutions,
-  getRegions,
-  setRegions as storeSetRegions,
-  getLiquidityOptions,
-  setLiquidityOptions as storeSetLiquidityOptions,
-  getDividends,
-  setDividends as storeSetDividends,
-  upsertAggregatedProducts,
-} from '@/lib/mock-store'
+import { upsertAggregatedProducts } from '@/lib/mock-store'
+import { api } from '@/lib/api'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
 import { useYear, CURRENT_YEAR, CURRENT_MONTH, AVAILABLE_YEARS } from '@/lib/year-context'
 import { YearSelect } from '@/components/layout/YearSelect'
@@ -73,53 +46,73 @@ export default function ProdutosPage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [institutionFilter, setInstitutionFilter] = useState('')
   const [nameFilter, setNameFilter] = useState('')
-  const [categories, setCategoriesState]         = useState<Category[]>(mockCategories)
-  const [assetClasses, setAssetClassesState]     = useState<AssetClass[]>(mockAssetClasses)
-  const [institutions, setInstitutionsState]     = useState<Institution[]>(mockInstitutions)
-  const [regions, setRegionsState]               = useState<Region[]>(mockRegions)
-  const [liquidityOptions, setLiquidityOptionsState] = useState<LiquidityOption[]>(mockLiquidityOptions)
-  const [products, setProductsState]             = useState<Product[]>(mockProducts)
-  const [entries, setEntriesState]               = useState<ProductEntry[]>(mockEntries)
-  const [dividends, setDividendsState]           = useState<Dividend[]>(mockDividends)
 
-  // Carrega do localStorage quando o email estiver disponível
+  // Dados de referência (tabelas auxiliares — ainda via mock enquanto ações não migra)
+  const [categories, setCategoriesState]             = useState<Category[]>([])
+  const [assetClasses, setAssetClassesState]         = useState<AssetClass[]>([])
+  const [institutions, setInstitutionsState]         = useState<Institution[]>([])
+  const [regions, setRegionsState]                   = useState<Region[]>([])
+  const [liquidityOptions, setLiquidityOptionsState] = useState<LiquidityOption[]>([])
+
+  // Dados principais (API)
+  const [products, setProducts]           = useState<Product[]>([])
+  const [monthEntries, setMonthEntries]   = useState<ProductEntry[]>([])
+  const [prevMonthEntries, setPrevMonthEntries] = useState<ProductEntry[]>([])
+  const [monthDividends, setMonthDividends] = useState<Dividend[]>([])
+  const [detailEntries, setDetailEntries] = useState<ProductEntry[]>([])
+  const [loadingEntries, setLoadingEntries] = useState(false)
+
+  // Previous month/year
+  const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
+  const prevYear  = selectedMonth === 1 ? selectedYear - 1 : selectedYear
+
+  // Carrega tabelas auxiliares e produtos na montagem (via API)
   useEffect(() => {
-    if (!email) return
-    setCategoriesState(getCategories(email))
-    setAssetClassesState(getAssetClasses(email))
-    setInstitutionsState(getInstitutions(email))
-    setRegionsState(getRegions(email))
-    setLiquidityOptionsState(getLiquidityOptions(email))
-    setProductsState(storeGetProducts(email))
-    setEntriesState(getProductEntries(email))
-    setDividendsState(getDividends(email))
+    async function loadStaticData() {
+      try {
+        const [cats, acs, insts, regs, liqs, prods] = await Promise.all([
+          api.get<Category[]>('/api/categories'),
+          api.get<AssetClass[]>('/api/assetclasses'),
+          api.get<Institution[]>('/api/institutions'),
+          api.get<Region[]>('/api/regions'),
+          api.get<LiquidityOption[]>('/api/liquidity'),
+          api.get<Product[]>('/api/products'),
+        ])
+        setCategoriesState(cats)
+        setAssetClassesState(acs)
+        setInstitutionsState(insts)
+        setRegionsState(regs)
+        setLiquidityOptionsState(liqs)
+        setProducts(prods)
+      } catch {
+        // silencioso
+      }
+    }
+    if (email) loadStaticData()
   }, [email])
 
-  // Wrappers que persistem no localStorage
-  function setCategories(upd: Category[] | ((p: Category[]) => Category[])) {
-    setCategoriesState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetCategories(email, n); return n })
-  }
-  function setAssetClasses(upd: AssetClass[] | ((p: AssetClass[]) => AssetClass[])) {
-    setAssetClassesState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetAssetClasses(email, n); return n })
-  }
-  function setInstitutions(upd: Institution[] | ((p: Institution[]) => Institution[])) {
-    setInstitutionsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetInstitutions(email, n); return n })
-  }
-  function setRegions(upd: Region[] | ((p: Region[]) => Region[])) {
-    setRegionsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetRegions(email, n); return n })
-  }
-  function setLiquidityOptions(upd: LiquidityOption[] | ((p: LiquidityOption[]) => LiquidityOption[])) {
-    setLiquidityOptionsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetLiquidityOptions(email, n); return n })
-  }
-  function setProducts(upd: Product[] | ((p: Product[]) => Product[])) {
-    setProductsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetProducts(email, n); return n })
-  }
-  function setEntries(upd: ProductEntry[] | ((p: ProductEntry[]) => ProductEntry[])) {
-    setEntriesState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) setProductEntries(email, n); return n })
-  }
-  function setDividends(upd: Dividend[] | ((p: Dividend[]) => Dividend[])) {
-    setDividendsState(prev => { const n = typeof upd === 'function' ? upd(prev) : upd; if (email) storeSetDividends(email, n); return n })
-  }
+  // Carrega entries e dividendos quando mês/ano mudam
+  useEffect(() => {
+    async function loadMonthData() {
+      setLoadingEntries(true)
+      try {
+        const [current, prev, divs] = await Promise.all([
+          api.get<ProductEntry[]>(`/api/entries?month=${selectedMonth}&year=${selectedYear}`),
+          api.get<ProductEntry[]>(`/api/entries?month=${prevMonth}&year=${prevYear}`),
+          api.get<Dividend[]>(`/api/dividends?month=${selectedMonth}&year=${selectedYear}`),
+        ])
+        setMonthEntries(current)
+        setPrevMonthEntries(prev)
+        setMonthDividends(divs)
+      } catch {
+        // silencioso
+      } finally {
+        setLoadingEntries(false)
+      }
+    }
+    loadMonthData()
+  }, [selectedMonth, selectedYear, prevMonth, prevYear])
+
   const [modal, setModal]               = useState<ModalState>({ open: false })
   const [importOpen, setImportOpen]       = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
@@ -127,6 +120,14 @@ export default function ProdutosPage() {
   const [dividendProductId, setDividendProductId] = useState<string | null>(null)
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
   const [reactivateProductId, setReactivateProductId] = useState<string | null>(null)
+
+  // Carrega histórico completo quando modal de detalhe abre
+  useEffect(() => {
+    if (!detailProductId) { setDetailEntries([]); return }
+    api.get<ProductEntry[]>(`/api/entries?productId=${detailProductId}`)
+      .then(setDetailEntries)
+      .catch(() => setDetailEntries([]))
+  }, [detailProductId])
   const [showClosed, setShowClosed] = useState(false)
   const [pastMonthWarning, setPastMonthWarning] = useState<{
     mode: 'create' | 'edit' | 'delete' | 'import'
@@ -145,22 +146,6 @@ export default function ProdutosPage() {
     }
   }
 
-  // Previous month/year
-  const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
-  const prevYear  = selectedMonth === 1 ? selectedYear - 1 : selectedYear
-
-  // Entries for the selected month/year
-  const monthEntries = useMemo(
-    () => entries.filter(e => e.month === selectedMonth && e.year === selectedYear),
-    [entries, selectedMonth, selectedYear],
-  )
-
-  // Entries for the previous month/year
-  const prevMonthEntries = useMemo(
-    () => entries.filter(e => e.month === prevMonth && e.year === prevYear),
-    [entries, prevMonth, prevYear],
-  )
-
   // Apply category, institution and name filters
   const filteredEntries = useMemo(() => {
     const search = nameFilter.trim().toLowerCase()
@@ -175,13 +160,10 @@ export default function ProdutosPage() {
     })
   }, [monthEntries, products, categoryFilter, institutionFilter, nameFilter, showClosed])
 
-  // Dividend totals per product for the selected month — computed directly (no memo)
+  // Dividend totals per product for the selected month
   const dividendByProduct: Record<string, number> = {}
-  for (const d of dividends) {
-    const [y, m] = d.date.split('-').map(Number)
-    if (m === selectedMonth && y === selectedYear) {
-      dividendByProduct[d.productId] = (dividendByProduct[d.productId] ?? 0) + d.dividendo + d.jcp + d.outros
-    }
+  for (const d of monthDividends) {
+    dividendByProduct[d.productId] = (dividendByProduct[d.productId] ?? 0) + d.dividendo + d.jcp + d.outros
   }
 
   // Group entries by category (preserving category order)
@@ -237,161 +219,188 @@ export default function ProdutosPage() {
     ? products.find(p => p.id === modal.productId)
     : undefined
   const editEntry = editProduct
-    ? entries.find(e => e.productId === editProduct.id && e.month === selectedMonth && e.year === selectedYear)
+    ? monthEntries.find(e => e.productId === editProduct.id)
     : undefined
 
-  function handleAdd(data: ProdutoFormData) {
-    const newId = `p${Date.now()}`
-    const newProduct: Product = {
-      id: newId,
-      name: data.name,
-      cnpj: data.cnpj || undefined,
-      categoryId: data.categoryId,
-      assetClassId: data.assetClassId,
-      institutionId: data.institutionId,
-      regionId: data.regionId,
-      liquidityId: data.liquidityId,
-      currency: 'BRL',
-      status: 'active',
-      createdAt: new Date().toISOString().slice(0, 10),
-      details: data.details || undefined,
+  async function handleAdd(data: ProdutoFormData) {
+    try {
+      const product = await api.post<Product>('/api/products', {
+        name: data.name,
+        cnpj: data.cnpj || undefined,
+        categoryId: data.categoryId,
+        assetClassId: data.assetClassId,
+        institutionId: data.institutionId,
+        regionId: data.regionId,
+        liquidityId: data.liquidityId,
+        currency: 'BRL',
+        details: data.details || undefined,
+      })
+      const entry = await api.post<ProductEntry>('/api/entries', {
+        productId: product.id,
+        month: selectedMonth,
+        year: selectedYear,
+        contribution: data.contribution,
+        withdrawal: data.withdrawal,
+        returnPct: 0,
+        valueOriginal: data.valueBrl,
+        valueBrl: data.valueBrl,
+        valueUsd: data.valueUsd,
+      })
+      setProducts(prev => [...prev, product])
+      setMonthEntries(prev => [...prev, entry])
+      setModal({ open: false })
+    } catch {
+      // silencioso — tratar erros globalmente depois
     }
-    const newEntry: ProductEntry = {
-      id: `e${Date.now()}`,
-      productId: newId,
-      month: selectedMonth,
-      year: selectedYear,
-      contribution: data.contribution,
-      withdrawal: data.withdrawal,
-      returnPct: 0,
-      income: 0,
-      valueOriginal: data.valueBrl,
-      valueBrl: data.valueBrl,
-      valueUsd: data.valueUsd,
-      valueFinal: data.valueBrl,
-      createdAt: new Date().toISOString().slice(0, 10),
-    }
-    setProducts(prev => [...prev, newProduct])
-    setEntries(prev => [...prev, newEntry])
-    setModal({ open: false })
   }
 
-  function handleSave(data: ProdutoFormData) {
+  async function handleSave(data: ProdutoFormData) {
     if (!modal.open || modal.mode !== 'edit') return
     const productId = modal.productId
-    setProducts(prev =>
-      prev.map(p =>
-        p.id === productId
-          ? {
-              ...p,
-              name: data.name,
-              cnpj: data.cnpj || undefined,
-              categoryId: data.categoryId,
-              assetClassId: data.assetClassId,
-              institutionId: data.institutionId,
-              regionId: data.regionId,
-              liquidityId: data.liquidityId,
-              details: data.details || undefined,
-            }
-          : p,
-      ),
-    )
-    setEntries(prev =>
-      prev.map(e =>
-        e.productId === productId && e.month === selectedMonth && e.year === selectedYear
-          ? {
-              ...e,
-              contribution: data.contribution,
-              withdrawal: data.withdrawal,
-              valueBrl: data.valueBrl,
-              valueUsd: data.valueUsd,
-              valueFinal: data.valueBrl,
-            }
-          : e,
-      ),
-    )
-    setModal({ open: false })
-  }
+    try {
+      const updatedProduct = await api.put<Product>(`/api/products/${productId}`, {
+        name: data.name,
+        cnpj: data.cnpj || undefined,
+        categoryId: data.categoryId,
+        assetClassId: data.assetClassId,
+        institutionId: data.institutionId,
+        regionId: data.regionId,
+        liquidityId: data.liquidityId,
+        details: data.details || undefined,
+      })
 
-  function handleCopyFromPrev() {
-    const now = new Date().toISOString().slice(0, 10)
-    setEntries(prev => {
-      const withoutDest = prev.filter(
-        e => !(e.month === selectedMonth && e.year === selectedYear),
-      )
-      const copied = prevMonthEntries
-        .filter(e => !e.isClosed)
-        .map((e, i) => ({
-          ...e,
-          id: `e_copy_${Date.now()}_${i}`,
+      let updatedEntry: ProductEntry
+      if (editEntry) {
+        updatedEntry = await api.put<ProductEntry>(`/api/entries/${editEntry.id}`, {
+          contribution: data.contribution,
+          withdrawal: data.withdrawal,
+          valueBrl: data.valueBrl,
+          valueUsd: data.valueUsd,
+          valueOriginal: data.valueBrl,
+        })
+      } else {
+        updatedEntry = await api.post<ProductEntry>('/api/entries', {
+          productId,
           month: selectedMonth,
           year: selectedYear,
-          contribution: 0,
-          withdrawal: 0,
+          contribution: data.contribution,
+          withdrawal: data.withdrawal,
           returnPct: 0,
-          income: 0,
-          createdAt: now,
-        }))
-      return [...withoutDest, ...copied]
-    })
+          valueOriginal: data.valueBrl,
+          valueBrl: data.valueBrl,
+          valueUsd: data.valueUsd,
+        })
+      }
 
-    // Recalcula os agregados (Ações/FIIs) com preços atuais em cache
-    if (email) {
-      upsertAggregatedProducts(email, selectedMonth, selectedYear)
-      setEntriesState(getProductEntries(email))
-      setProductsState(storeGetProducts(email))
+      setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p))
+      setMonthEntries(prev => {
+        const hasEntry = prev.some(e => e.productId === productId)
+        if (hasEntry) return prev.map(e => e.productId === productId ? updatedEntry : e)
+        return [...prev, updatedEntry]
+      })
+      setModal({ open: false })
+    } catch {
+      // silencioso
     }
+  }
 
+  async function handleCopyFromPrev() {
+    try {
+      const created = await api.post<ProductEntry[]>('/api/entries/copy-month', {
+        targetMonth: selectedMonth,
+        targetYear: selectedYear,
+      })
+      setMonthEntries(created)
+
+      // Recalcula agregados (Ações/FIIs) — ações ainda em mock, mas grava na API
+      if (email) {
+        await upsertAggregatedProducts(email, selectedMonth, selectedYear)
+        const [updatedProducts, updatedEntries] = await Promise.all([
+          api.get<Product[]>('/api/products'),
+          api.get<ProductEntry[]>(`/api/entries?month=${selectedMonth}&year=${selectedYear}`),
+        ])
+        setProducts(updatedProducts)
+        setMonthEntries(updatedEntries)
+      }
+    } catch {
+      // silencioso
+    }
     setCopyModalOpen(false)
   }
 
-  function handleSaveDividends(productId: string, month: number, year: number, updated: Dividend[]) {
-    setDividends(prev => [
-      ...prev.filter(d => {
-        if (d.productId !== productId) return true
-        const [y, m] = d.date.split('-').map(Number)
-        return !(m === month && y === year)
-      }),
-      ...updated,
-    ])
+  async function handleSaveDividends(productId: string, month: number, year: number, updated: Dividend[]) {
+    try {
+      // Estratégia replace: apaga todos do produto/mês e recria
+      const toDelete = monthDividends.filter(d => d.productId === productId)
+      await Promise.all(toDelete.map(d => api.delete(`/api/dividends/${d.id}`)))
+
+      const created = await Promise.all(updated.map(d =>
+        api.post<Dividend>('/api/dividends', {
+          productId,
+          date: d.date,
+          dividendo: d.dividendo,
+          jcp: d.jcp,
+          outros: d.outros,
+        })
+      ))
+
+      setMonthDividends(prev => [
+        ...prev.filter(d => d.productId !== productId),
+        ...created,
+      ])
+    } catch {
+      // silencioso
+    }
   }
 
-  function handleReactivate(productId: string) {
-    setEntries(prev => prev.map(e =>
-      e.productId === productId && e.month === selectedMonth && e.year === selectedYear
-        ? { ...e, isClosed: false }
-        : e
-    ))
+  async function handleReactivate(productId: string) {
+    const entry = monthEntries.find(e => e.productId === productId)
+    if (entry) {
+      try {
+        const updated = await api.put<ProductEntry>(`/api/entries/${entry.id}`, { isClosed: false })
+        setMonthEntries(prev => prev.map(e => e.id === entry.id ? updated : e))
+      } catch {
+        // silencioso
+      }
+    }
     setReactivateProductId(null)
   }
 
-  function handleDelete(productId: string) {
+  async function handleDelete(productId: string) {
     const product = products.find(p => p.id === productId)
-    if (product?.isAggregated) {
-      setEntries(prev => prev.filter(e => !(e.productId === productId && e.month === selectedMonth && e.year === selectedYear)))
-      setDividends(prev => prev.filter(d => {
-        if (d.productId !== productId) return true
-        const [y, m] = d.date.split('-').map(Number)
-        return !(m === selectedMonth && y === selectedYear)
-      }))
-    } else {
-      setEntries(prev => prev.map(e =>
-        e.productId === productId && e.month === selectedMonth && e.year === selectedYear
-          ? { ...e, isClosed: true }
-          : e
-      ))
+    const entry = monthEntries.find(e => e.productId === productId)
+    try {
+      if (product?.isAggregated) {
+        if (entry) {
+          await api.delete(`/api/entries/${entry.id}`)
+          setMonthEntries(prev => prev.filter(e => e.id !== entry.id))
+        }
+        const aggDivs = monthDividends.filter(d => d.productId === productId)
+        await Promise.all(aggDivs.map(d => api.delete(`/api/dividends/${d.id}`)))
+        setMonthDividends(prev => prev.filter(d => d.productId !== productId))
+      } else {
+        if (entry) {
+          const updated = await api.put<ProductEntry>(`/api/entries/${entry.id}`, { isClosed: true })
+          setMonthEntries(prev => prev.map(e => e.id === entry.id ? updated : e))
+        }
+      }
+    } catch {
+      // silencioso
     }
     setDeleteProductId(null)
   }
 
+  // Import ainda usa mock (fora do escopo desta migração)
   function handleImport(result: ImportResult) {
-    setCategories(prev => [...prev, ...result.newCategories])
-    setAssetClasses(prev => [...prev, ...result.newAssetClasses])
-    setInstitutions(prev => [...prev, ...result.newInstitutions])
-    setRegions(prev => [...prev, ...result.newRegions])
-    setLiquidityOptions(prev => [...prev, ...result.newLiquidityOptions])
+    setCategoriesState(prev => [...prev, ...result.newCategories])
+    setAssetClassesState(prev => [...prev, ...result.newAssetClasses])
+    setInstitutionsState(prev => [...prev, ...result.newInstitutions])
+    setRegionsState(prev => [...prev, ...result.newRegions])
+    setLiquidityOptionsState(prev => [...prev, ...result.newLiquidityOptions])
     setProducts(prev => [...prev, ...result.products])
-    setEntries(prev => [...prev, ...result.entries])
+    setMonthEntries(prev => [...prev, ...result.entries.filter(
+      e => e.month === selectedMonth && e.year === selectedYear
+    )])
     setImportOpen(false)
   }
 
@@ -648,21 +657,16 @@ export default function ProdutosPage() {
         const institution  = product ? institutions.find(i => i.id === product.institutionId) : undefined
         const region          = product ? regions.find(r => r.id === product.regionId) : undefined
         const liquidityOption = product ? liquidityOptions.find(l => l.id === product.liquidityId) : undefined
-        const prodEntries  = entries.filter(e => e.productId === detailProductId)
-        const currentEntry = prodEntries.find(e => e.month === selectedMonth && e.year === selectedYear)
-        const dividendTotal = dividends
-          .filter(d => {
-            if (d.productId !== detailProductId) return false
-            const [y, m] = d.date.split('-').map(Number)
-            return m === selectedMonth && y === selectedYear
-          })
+        const currentEntry = detailEntries.find(e => e.month === selectedMonth && e.year === selectedYear)
+        const dividendTotal = monthDividends
+          .filter(d => d.productId === detailProductId)
           .reduce((acc, d) => acc + d.dividendo + d.jcp + d.outros, 0)
         if (!product || !category || !assetClass || !institution) return null
         return (
           <ProductDetailModal
             product={product}
             currentEntry={currentEntry}
-            entries={prodEntries}
+            entries={detailEntries}
             category={category}
             assetClass={assetClass}
             institution={institution}
@@ -673,15 +677,12 @@ export default function ProdutosPage() {
           />
         )
       })()}
+
       {/* Modal de dividendos */}
       {dividendProductId && (() => {
         const product = products.find(p => p.id === dividendProductId)
         if (!product) return null
-        const productDividends = dividends.filter(d => {
-          if (d.productId !== dividendProductId) return false
-          const [y, m] = d.date.split('-').map(Number)
-          return m === selectedMonth && y === selectedYear
-        })
+        const productDividends = monthDividends.filter(d => d.productId === dividendProductId)
         return (
           <DividendModal
             productId={dividendProductId}
@@ -694,6 +695,7 @@ export default function ProdutosPage() {
           />
         )
       })()}
+
       {/* Modal de reativação de produto */}
       {reactivateProductId && (() => {
         const product = products.find(p => p.id === reactivateProductId)
@@ -725,6 +727,7 @@ export default function ProdutosPage() {
           />
         )
       })()}
+
       {/* Popup danger zone — mês passado */}
       {pastMonthWarning && (
         <PastMonthWarningModal
@@ -734,6 +737,32 @@ export default function ProdutosPage() {
           onCancel={() => setPastMonthWarning(null)}
           onConfirm={pastMonthWarning.onConfirm}
         />
+      )}
+
+      {/* Overlay de loading — bloqueia interação ao trocar de mês */}
+      {loadingEntries && (
+        <>
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '28px 40px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2.5" strokeLinecap="round"
+                style={{ animation: 'spin 0.8s linear infinite' }}>
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+              <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>Carregando...</span>
+            </div>
+          </div>
+        </>
       )}
     </AppShell>
   )

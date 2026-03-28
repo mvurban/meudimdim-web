@@ -36,6 +36,8 @@
    ## Meses dos produtos
    - O sistema é vivo, e o andamento dos anos e meses também. Ao iniciar sua conta sem importações por exemplo, se você começa em 2026 no mes de março, apenas maio e abril ficam disponíveis para editção, os demais meses ficam inativos. Com o passar do tempo, novos meses vão sendo habilitados. Exemplo: Se estamos em março, abril também fica habilitado para cadastro e edição, porém maio fica inacessível. Quando chegarmos em 1 de abrir, maio se torna disponível. 
    - então quando chegar em 2027, a combo de ano terá que ter esse ano disponível em Dezembro de 2026 só com janeiro clicável, os demais meses inativos. Em 1 de janeiro, fevereiro habilita e assim por diante.
+   - A criação inicial de mes e ano segue a seguinte regra. O mes/ano inicial é a data mais antiga existente na lista de produtos do usuário. Se o produto mais antigo for abril/2022, a combo de anos e meses deve progredir mes a mes até o mes atual/ano atual. Então a combo de ano vai ter 2022, 2023... 2026 e cada ano com seus 12 meses, com exceção do primeiro e do ultimo mes. 
+      - Pensar em como criar ano/meses sem ser pela importação - produto é incluído no mes/ano disponível, se não tem mes e ano disponível o produto antigo não pode ser incluído.
 
 
 ---

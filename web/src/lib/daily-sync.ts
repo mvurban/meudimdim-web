@@ -51,7 +51,7 @@ export async function runDailySyncIfNeeded(
       setLastRefresh(email, new Date().toISOString())
 
       const now = new Date()
-      upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
+      await upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
 
       if (failed.length > 0) {
         errors.push(`Não foi possível atualizar ${failed.length} ação(ões): ${failed.join(', ')}`)
