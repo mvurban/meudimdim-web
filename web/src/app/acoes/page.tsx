@@ -550,12 +550,12 @@ function AcoesPageInner() {
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               <Th>Ação</Th>
               <Th align="right">Qtd</Th>
-              <Th align="right">Preço Médio</Th>
-              <Th align="right">P. Fechamento</Th>
+              <Th align="right">Preço de Compra</Th>
+              <Th align="right">Fechamento</Th>
               <Th align="right">Preço Atual</Th>
+              <Th align="right">Rend. Dia</Th>
+              <Th align="right">Rend. Total</Th>
               <Th align="right">Valor Total</Th>
-              <Th align="right">Rendimento</Th>
-              <Th align="right">Dividendos</Th>
               <Th align="right">Ações</Th>
             </tr>
           </thead>
@@ -576,11 +576,11 @@ function AcoesPageInner() {
             )}
             {pagedItems.map(item => {
               const inst = getInstitution(item.institutionId)
-              const precoRef = item.precoAtual || item.precoMedio
-              const valorTotal = item.quantidade * precoRef
-              const rendimento = ((precoRef / item.precoMedio) - 1) * 100
-              const positivo = rendimento >= 0
-              const divTotal = dividendTotalFor(item.id)
+              const precoAtual = item.precoAtual || item.precoMedio
+              const precoFech = item.precoFechamento || item.precoMedio
+              const valorTotal = item.quantidade * precoAtual
+              const rendDia = precoFech > 0 ? ((precoAtual / precoFech) - 1) * 100 : 0
+              const rendTotal = item.precoMedio > 0 ? ((precoAtual / item.precoMedio) - 1) * 100 : 0
 
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -630,16 +630,14 @@ function AcoesPageInner() {
                   <td style={{ ...tdStyle, textAlign: 'right', color: item.precoAtual > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                     {item.precoAtual > 0 ? `R$ ${fmt(item.precoAtual)}` : '—'}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>
-                    R$ {fmt(valorTotal)}
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                    <RendCell value={rendDia} hasData={item.precoFechamento > 0 && item.precoAtual > 0} />
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
-                    <span style={{ color: positivo ? '#22c55e' : '#ef4444', fontWeight: 600, fontSize: 13 }}>
-                      {positivo ? '▲' : '▼'} {Math.abs(rendimento).toFixed(2)}%
-                    </span>
+                    <RendCell value={rendTotal} hasData={item.precoAtual > 0} />
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'right', color: divTotal > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: divTotal > 0 ? 600 : 400 }}>
-                    {divTotal > 0 ? `R$ ${fmt(divTotal)}` : '—'}
+                  <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>
+                    R$ {fmt(valorTotal)}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <button onClick={() => setDividendAcao(item.id)} style={actionBtn} title="Dividendos"><IconDividend /></button>
@@ -738,6 +736,16 @@ export default function AcoesPage() {
 }
 
 // ── Sub-componentes ──────────────────────────
+
+function RendCell({ value, hasData }: { value: number; hasData: boolean }) {
+  if (!hasData) return <span style={{ color: 'var(--text-muted)' }}>—</span>
+  const pos = value >= 0
+  return (
+    <span style={{ color: pos ? '#22c55e' : '#ef4444', fontWeight: 600, fontSize: 13 }}>
+      {pos ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
+    </span>
+  )
+}
 
 function SummaryCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (

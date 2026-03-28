@@ -1,8 +1,6 @@
-import { mockPrecos, upsertAggregatedProducts, setBenchmarks } from './mock-store'
+import { upsertAggregatedProducts, setBenchmarks } from './mock-store'
 import { api } from './api'
 import type { BenchmarkEntry } from '@/types'
-
-const FAKE_ERROR_RATE = 0.18
 
 function dailySyncKey(email: string) {
   return `mdd-daily-sync-${email}`
@@ -29,31 +27,26 @@ export async function runDailySyncIfNeeded(
 
   // 1. Atualizar cotações das ações em background
   try {
-    const acoes: { id: string; ticker: string; precoMedio: number; precoFechamento: number; precoAtual: number }[] =
-      await api.get('/api/acoes')
+    const acoes: { id: string; ticker: string }[] = await api.get('/api/acoes')
 
     if (acoes.length > 0) {
-      const failed: string[] = []
-      const updates: { id: string; precoFechamento: number; precoAtual: number }[] = []
+      const { results, failed } = await api.post<{
+        results: { id: string; ticker: string; precoAtual: number; precoFechamento: number }[]
+        failed: { id: string; ticker: string }[]
+      }>('/api/acoes/fetch-quotes', {
+        tickers: acoes.map(a => ({ id: a.id, ticker: a.ticker })),
+      })
 
-      for (const a of acoes) {
-        if (Math.random() < FAKE_ERROR_RATE) {
-          failed.push(a.ticker)
-          continue
-        }
-        const { precoFechamento, precoAtual } = mockPrecos(a.precoFechamento || a.precoMedio)
-        updates.push({ id: a.id, precoFechamento, precoAtual })
+      if (results.length > 0) {
+        await api.put('/api/acoes/refresh', {
+          updates: results.map(r => ({ id: r.id, precoFechamento: r.precoFechamento, precoAtual: r.precoAtual })),
+        })
+        const now = new Date()
+        await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
       }
-
-      if (updates.length > 0) {
-        await api.put('/api/acoes/refresh', { updates })
-      }
-
-      const now = new Date()
-      await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
 
       if (failed.length > 0) {
-        errors.push(`Não foi possível atualizar ${failed.length} ação(ões): ${failed.join(', ')}`)
+        errors.push(`Não foi possível atualizar ${failed.length} ação(ões): ${failed.map(f => f.ticker).join(', ')}`)
       }
     }
   } catch {

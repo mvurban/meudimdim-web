@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { mockPrecos } from '@/lib/mock-store'
+import { api } from '@/lib/api'
 
 interface AcaoItem {
   id: string
@@ -26,11 +26,7 @@ interface RefreshModalProps {
   summary?: { tickers: number; products: number } | null
 }
 
-const DELAY_PER_TICKER = 180 // ms
-const FAKE_ERROR_RATE = 0.18 // ~18% de chance de falha por ticker
-
 export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalProps) {
-  const [currentIndex, setCurrentIndex] = useState(-1)
   const [results, setResults] = useState<RefreshResult[]>([])
   const [failed, setFailed] = useState<{ id: string; ticker: string }[]>([])
   const [done, setDone] = useState(false)
@@ -40,39 +36,28 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
     if (running.current || acoes.length === 0) return
     running.current = true
 
-    const collected: RefreshResult[] = []
-    const errors: { id: string; ticker: string }[] = []
-
     async function run() {
-      for (let i = 0; i < acoes.length; i++) {
-        const acao = acoes[i]
-        setCurrentIndex(i)
-
-        await new Promise(r => setTimeout(r, DELAY_PER_TICKER))
-
-        // Simula falha para alguns tickers
-        if (Math.random() < FAKE_ERROR_RATE) {
-          errors.push({ id: acao.id, ticker: acao.ticker })
-          setFailed([...errors])
-          continue
-        }
-
-        const seed = Math.random()
-        const { precoFechamento, precoAtual } = mockPrecos(acao.precoFechamento || acao.precoMedio, seed)
-        collected.push({ id: acao.id, ticker: acao.ticker, precoFechamento, precoAtual })
-        setResults([...collected])
+      try {
+        const { results: fetched, failed: errors } = await api.post<{
+          results: RefreshResult[]
+          failed: { id: string; ticker: string }[]
+        }>('/api/acoes/fetch-quotes', {
+          tickers: acoes.map(a => ({ id: a.id, ticker: a.ticker })),
+        })
+        setResults(fetched)
+        setFailed(errors)
+        setDone(true)
+        onDone(fetched)
+      } catch {
+        setFailed(acoes.map(a => ({ id: a.id, ticker: a.ticker })))
+        setDone(true)
+        onDone([])
       }
-
-      setCurrentIndex(acoes.length)
-      setDone(true)
-      onDone(collected)
     }
 
     run()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const progress = acoes.length === 0 ? 100 : Math.round((Math.max(0, currentIndex) / acoes.length) * 100)
-  const currentTicker = currentIndex >= 0 && currentIndex < acoes.length ? acoes[currentIndex].ticker : null
   const readyToClose = done && summary != null
   const hasErrors = failed.length > 0
 
@@ -114,32 +99,21 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div style={{ background: 'var(--bg-elevated)', borderRadius: 99, height: 6, marginBottom: 8, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%',
-            borderRadius: 99,
-            background: readyToClose
-              ? hasErrors ? '#f59e0b' : '#22c55e'
-              : '#3b82f6',
-            width: `${progress}%`,
-            transition: 'width 0.2s ease',
-          }} />
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {done
-              ? `${acoes.length} tickers processados`
-              : currentTicker ? `Buscando ${currentTicker}...` : 'Iniciando...'}
-          </span>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{progress}%</span>
-        </div>
+        {/* Spinner enquanto aguarda */}
+        {!done && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 0' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ animation: 'spin 1s linear infinite' }}>
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
 
         {/* Resumo pós-conclusão */}
         {readyToClose && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-            {/* Sucesso */}
             <div style={{
               padding: '10px 14px', borderRadius: 8,
               background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
@@ -153,15 +127,14 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
               </span>
             </div>
 
-            {/* Erros */}
             {hasErrors && (
               <div style={{
                 padding: '10px 14px', borderRadius: 8,
                 background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: failed.length > 0 ? 6 : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                    ✗ Itens não atualizados
+                    ✗ Itens não encontrados
                   </span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>
                     {failed.length}
@@ -172,27 +145,23 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
                 </p>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Lista de tickers em processamento */}
-        {results.length > 0 && !readyToClose && (
-          <div style={{
-            maxHeight: 160,
-            overflowY: 'auto',
-            background: 'var(--bg-elevated)',
-            borderRadius: 8,
-            padding: '4px 0',
-            marginBottom: 16,
-          }}>
-            {[...results].reverse().map(r => (
-              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 12px', fontSize: 12 }}>
-                <span style={{ fontWeight: 700, color: 'var(--brand)', letterSpacing: '0.5px' }}>{r.ticker}</span>
-                <span style={{ color: 'var(--text-primary)' }}>
-                  R$ {r.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+            {/* Tickers atualizados */}
+            {results.length > 0 && (
+              <div style={{
+                maxHeight: 160, overflowY: 'auto',
+                background: 'var(--bg-elevated)', borderRadius: 8, padding: '4px 0',
+              }}>
+                {results.map(r => (
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 12px', fontSize: 12 }}>
+                    <span style={{ fontWeight: 700, color: 'var(--brand)', letterSpacing: '0.5px' }}>{r.ticker}</span>
+                    <span style={{ color: 'var(--text-primary)' }}>
+                      R$ {r.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 

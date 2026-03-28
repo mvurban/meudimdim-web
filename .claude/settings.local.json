@@ -26,7 +26,18 @@
       "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-web -type d -name *classe* -o -type d -name *class*)",
       "Bash(grep -n \"assetClass\\\\|classe.*ativo\\\\|ClassesPage\" /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src/components -r --include=*.tsx)",
       "Bash(find C:/Projetos/mvurban/meudimdim/meudimdim-api -name *.ts -not -path */node_modules/*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:scrapfly.io)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:algotrading101.com)",
+      "WebFetch(domain:blog.wisesheets.io)",
+      "WebFetch(domain:www.omi.me)",
+      "WebFetch(domain:www.w3tutorials.net)",
+      "WebFetch(domain:publicapis.io)",
+      "WebFetch(domain:www.codestudy.net)"
     ]
   }
 }
