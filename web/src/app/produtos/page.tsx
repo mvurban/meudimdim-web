@@ -20,6 +20,7 @@ import { ReactivateProductModal } from '@/components/produtos/ReactivateProductM
 import { PastMonthWarningModal } from '@/components/produtos/PastMonthWarningModal'
 import { upsertAggregatedProducts } from '@/lib/mock-store'
 import { api } from '@/lib/api'
+import { PageLoader } from '@/components/ui/PageLoader'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
 import { useYear, CURRENT_YEAR, CURRENT_MONTH, AVAILABLE_YEARS } from '@/lib/year-context'
 import { YearSelect } from '@/components/layout/YearSelect'
@@ -60,6 +61,7 @@ export default function ProdutosPage() {
   const [prevMonthEntries, setPrevMonthEntries] = useState<ProductEntry[]>([])
   const [monthDividends, setMonthDividends] = useState<Dividend[]>([])
   const [detailEntries, setDetailEntries] = useState<ProductEntry[]>([])
+  const [loading, setLoading] = useState(true)
   const [loadingEntries, setLoadingEntries] = useState(false)
 
   // Previous month/year
@@ -86,6 +88,8 @@ export default function ProdutosPage() {
         setProducts(prods)
       } catch {
         // silencioso
+      } finally {
+        setLoading(false)
       }
     }
     if (email) loadStaticData()
@@ -426,6 +430,8 @@ export default function ProdutosPage() {
       </button>
     </div>
   )
+
+  if (loading) return <PageLoader />
 
   return (
     <AppShell topbarAction={topbarAction}>

@@ -85,6 +85,168 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ---
 
+# Cache
+ Plano: Cache de Tabelas Auxiliares (ref-cache)
+
+ Contexto
+
+ Atualmente, toda vez que o usuário abre a página de Produtos ou Ações, o sistema busca na API as tabelas auxiliares
+ (categorias, classes de ativo, instituições, regiões, liquidez). Esses dados mudam raramente — só quando o usuário
+ edita em Configurações. O objetivo é fazer uma única busca e reusar localmente, invalidando apenas a tabela que foi
+ alterada.
+
+ ---
+ Estratégia: Módulo ref-cache (in-memory + localStorage)
+
+ - In-memory (Map): acesso imediato nas navegações dentro da sessão (ex: sair e voltar para Produtos)
+ - localStorage: persiste entre sessões (ex: fechar e reabrir o browser)
+ - Invalidação por tabela: cada CRUD de configuração invalida apenas a chave correspondente
+ - Sem TTL: os dados são válidos indefinidamente — só invalidam quando há mutação
+
+ Tabelas em cache (5 ref keys)
+
+ ┌──────────────┬───────────────────┬──────────────────────────────────────┐
+ │     Key      │     Endpoint      │               CRUD em                │
+ ├──────────────┼───────────────────┼──────────────────────────────────────┤
+ │ categories   │ /api/categories   │ /configuracoes/categorias/page.tsx   │
+ ├──────────────┼───────────────────┼──────────────────────────────────────┤
+ │ assetclasses │ /api/assetclasses │ /configuracoes/classes/page.tsx      │
+ ├──────────────┼───────────────────┼──────────────────────────────────────┤
+ │ institutions │ /api/institutions │ /configuracoes/instituicoes/page.tsx │
+ ├──────────────┼───────────────────┼──────────────────────────────────────┤
+ │ regions      │ /api/regions      │ /configuracoes/regioes/page.tsx      │
+ ├──────────────┼───────────────────┼──────────────────────────────────────┤
+ │ liquidity    │ /api/liquidity    │ /configuracoes/liquidez/page.tsx     │
+ └──────────────┴───────────────────┴──────────────────────────────────────┘
+
+ Não entra em cache: produtos, entries, dividends, ações (dados dinâmicos).
+
+ ---
+ Arquivos a criar/modificar
+
+ 1. Novo: web/src/lib/ref-cache.ts
+
+ Módulo singleton simples — sem React, sem Context:
+
+ export type RefKey = 'categories' | 'assetclasses' | 'institutions' | 'regions' | 'liquidity'
+
+ const LS_PREFIX = 'mdd_ref_'
+ const mem = new Map<RefKey, unknown[]>()
+
+ export const refCache = {
+   get<T>(key: RefKey): T[] | null {
+     if (mem.has(key)) return mem.get(key) as T[]
+     try {
+       const raw = localStorage.getItem(LS_PREFIX + key)
+       if (raw) {
+         const data = JSON.parse(raw) as T[]
+         mem.set(key, data)
+         return data
+       }
+     } catch { /* noop */ }
+     return null
+   },
+
+   set<T>(key: RefKey, data: T[]): void {
+     mem.set(key, data)
+     try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(data)) } catch { /* noop */ }
+   },
+
+   invalidate(key: RefKey): void {
+     mem.delete(key)
+     try { localStorage.removeItem(LS_PREFIX + key) } catch { /* noop */ }
+   },
+ }
+
+ 2. Novo: helper getRef<T> (dentro do próprio ref-cache.ts)
+
+ Evita repetição nos Promise.all das páginas:
+
+ export async function getRef<T>(key: RefKey, endpoint: string): Promise<T[]> {
+   const cached = refCache.get<T>(key)
+   if (cached) return cached
+   const data = await api.get<T[]>(endpoint)
+   refCache.set(key, data)
+   return data
+ }
+
+ ---
+ 3. web/src/app/produtos/page.tsx
+
+ Substituir o Promise.all das tabelas auxiliares:
+
+ // Antes:
+ api.get<Category[]>('/api/categories'),
+ api.get<AssetClass[]>('/api/assetclasses'),
+ ...
+
+ // Depois:
+ getRef<Category>('categories', '/api/categories'),
+ getRef<AssetClass>('assetclasses', '/api/assetclasses'),
+ getRef<Institution>('institutions', '/api/institutions'),
+ getRef<Region>('regions', '/api/regions'),
+ getRef<LiquidityOption>('liquidity', '/api/liquidity'),
+ api.get<Product[]>('/api/products'),  // produtos: sem cache (dinâmico)
+
+ 4. web/src/app/acoes/page.tsx
+
+ Substituir as duas chamadas de ref no Promise.all:
+
+ // institutions e assetclasses via getRef; acoes e stock-dividends sem cache:
+ getRef<Institution>('institutions', '/api/institutions'),
+ getRef<AssetClass>('assetclasses', '/api/assetclasses'),
+
+ 5. Páginas de Configuração (5 arquivos)
+
+ Após cada mutação (POST, PUT, DELETE), adicionar refCache.invalidate(key):
+
+ ┌─────────────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
+ │               Arquivo               │                            Key a invalidar                            │
+ ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+ │ configuracoes/categorias/page.tsx   │ 'categories' (e também 'assetclasses', pois classes exibem categoria) │
+ ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+ │ configuracoes/classes/page.tsx      │ 'assetclasses'                                                        │
+ ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+ │ configuracoes/instituicoes/page.tsx │ 'institutions'                                                        │
+ ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+ │ configuracoes/regioes/page.tsx      │ 'regions'                                                             │
+ ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+ │ configuracoes/liquidez/page.tsx     │ 'liquidity'                                                           │
+ └─────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
+
+ Padrão de onde inserir (todas as páginas seguem a mesma estrutura):
+ // Após api.post / api.put / api.delete bem-sucedido:
+ refCache.invalidate('institutions')
+ // seguido de: reload local (já existente em cada página)
+
+ ---
+ Fluxo após implementação
+
+ Usuário abre Ações
+   → getRef('institutions') → cache vazio → busca API → salva cache → exibe
+   → getRef('assetclasses') → cache vazio → busca API → salva cache → exibe
+
+ Usuário navega para Produtos
+   → getRef('institutions') → HIT in-memory → exibe sem request ✓
+   → getRef('categories')   → cache vazio → busca API → salva cache → exibe
+
+ Usuário vai em Configurações → Instituições → edita nome
+   → refCache.invalidate('institutions')
+
+ Usuário volta para Ações
+   → getRef('institutions') → cache vazio → busca API → salva cache → exibe ✓
+
+ ---
+ Verificação
+
+ 1. Abrir Ações → DevTools Network → ver requests de /api/institutions e /api/assetclasses
+ 2. Navegar para Produtos → Network → não deve ter request para /api/institutions
+ 3. Ir em Configurações → Instituições → criar nova → voltar para Ações → deve buscar da API (cache invalidado)
+ 4. Recarregar a página (F5) → Produtos → não deve buscar institutions/regions/etc (localStorage hit)
+ 5. Abrir aba anônima (limpa localStorage) → primeiro acesso busca tudo da API
+
+
+
 # FASE 2
 
 ## Admin

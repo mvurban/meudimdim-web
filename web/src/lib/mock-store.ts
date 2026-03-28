@@ -259,68 +259,64 @@ export function setProductEntries(email: string, items: ProductEntry[]): void {
 
 // ─────────────────────────────────────────────
 // Aggregated products (Ações/FIIs auto-managed)
-// Lê ações do mock (ainda não migradas) e escreve produtos/entries/dividends na API.
-// Resolve IDs reais da API por correspondência de nome com o mock.
+// Lê ações da API e escreve produtos/entries/dividends na API.
 // ─────────────────────────────────────────────
 export async function upsertAggregatedProducts(
-  email: string,
+  _email: string,
   month: number,
   year: number,
 ): Promise<{ upserted: number }> {
-  const acoes = getAcoes(email)
-  if (acoes.length === 0) return { upserted: 0 }
-
-  const mockAcs = getAssetClasses(email)
-  const mockInsts = getInstitutions(email)
-  const stockDividends = getStockDividends(email)
-
-  // Busca dados reais da API para resolver IDs
+  // Busca dados da API
+  let apiAcoes: AcaoItem[] = []
   let apiAcs: AssetClass[] = []
   let apiInsts: Institution[] = []
   let apiRegions: Region[] = []
   let apiLiqs: LiquidityOption[] = []
   let apiProducts: Product[] = []
+  let apiStockDivs: StockDividend[] = []
 
   try {
-    ;[apiAcs, apiInsts, apiRegions, apiLiqs, apiProducts] = await Promise.all([
+    ;[apiAcoes, apiAcs, apiInsts, apiRegions, apiLiqs, apiProducts, apiStockDivs] = await Promise.all([
+      api.get<AcaoItem[]>('/api/acoes'),
       api.get<AssetClass[]>('/api/assetclasses'),
       api.get<Institution[]>('/api/institutions'),
       api.get<Region[]>('/api/regions'),
       api.get<LiquidityOption[]>('/api/liquidity'),
       api.get<Product[]>('/api/products'),
+      api.get<any[]>('/api/stock-dividends'),
     ])
   } catch {
     return { upserted: 0 }
   }
 
+  if (apiAcoes.length === 0) return { upserted: 0 }
+
+  // Normaliza stockTickerId → acaoId para reutilizar a lógica abaixo
+  const stockDividends: StockDividend[] = apiStockDivs.map((d: any) => ({ ...d, acaoId: d.stockTickerId ?? d.acaoId }))
+
   const apiDefaultRegion = apiRegions.find(r => r.isDefault) ?? apiRegions[0]
   const apiDefaultLiqId  = apiLiqs[0]?.id
 
-  // Group by (assetClassId, institutionId) — usando mock IDs das ações
+  // Group by (assetClassId, institutionId) — IDs reais da API
   type GroupKey = string
-  const groups = new Map<GroupKey, { mockAcId: string; mockInstId: string; totalBrl: number }>()
+  const groups = new Map<GroupKey, { acId: string; instId: string; totalBrl: number }>()
 
-  for (const acao of acoes) {
+  for (const acao of apiAcoes) {
     const gKey: GroupKey = `${acao.assetClassId}__${acao.institutionId}`
-    const valueBrl = acao.quantidade * acao.precoAtual
+    const valueBrl = acao.quantidade * (acao.precoAtual || acao.precoMedio)
     const existing = groups.get(gKey)
     if (existing) {
       existing.totalBrl += valueBrl
     } else {
-      groups.set(gKey, { mockAcId: acao.assetClassId, mockInstId: acao.institutionId, totalBrl: valueBrl })
+      groups.set(gKey, { acId: acao.assetClassId, instId: acao.institutionId, totalBrl: valueBrl })
     }
   }
 
   let upserted = 0
 
   for (const [gKey, group] of groups) {
-    const mockAc   = mockAcs.find(a => a.id === group.mockAcId)
-    const mockInst = mockInsts.find(i => i.id === group.mockInstId)
-    if (!mockAc || !mockInst) continue
-
-    // Resolve IDs reais pelo nome
-    const apiAc   = apiAcs.find(a => a.name === mockAc.name)
-    const apiInst = apiInsts.find(i => i.name === mockInst.name)
+    const apiAc   = apiAcs.find(a => a.id === group.acId)
+    const apiInst = apiInsts.find(i => i.id === group.instId)
     if (!apiAc || !apiInst) continue
 
     const valueBrl = Math.round(group.totalBrl * 100) / 100
@@ -333,7 +329,7 @@ export async function upsertAggregatedProducts(
     if (!aggProduct) {
       try {
         aggProduct = await api.post<Product>('/api/products', {
-          name: `${mockAc.name} ${mockInst.name}`,
+          name: `${apiAc.name} ${apiInst.name}`,
           categoryId: apiAc.categoryId,
           assetClassId: apiAc.id,
           institutionId: apiInst.id,
@@ -366,7 +362,7 @@ export async function upsertAggregatedProducts(
     }
 
     // Agregar dividendos das ações do grupo
-    const groupAcoes = acoes.filter(a => `${a.assetClassId}__${a.institutionId}` === gKey)
+    const groupAcoes = apiAcoes.filter(a => `${a.assetClassId}__${a.institutionId}` === gKey)
     const acaoIds = new Set(groupAcoes.map(a => a.id))
     const monthStr = String(month).padStart(2, '0')
 
@@ -402,13 +398,7 @@ export async function upsertAggregatedProducts(
   // Agregados sem ações correspondentes: remove a entry do mês na API
   for (const p of apiProducts) {
     if (!p.isAggregated) continue
-    const stillActive = [...groups.values()].some(g => {
-      const apiAc   = apiAcs.find(a => a.id === p.assetClassId)
-      const apiInst = apiInsts.find(i => i.id === p.institutionId)
-      const mockAc  = mockAcs.find(a => a.name === apiAc?.name)
-      const mockInst = mockInsts.find(i => i.name === apiInst?.name)
-      return mockAc && mockInst && g.mockAcId === mockAc.id && g.mockInstId === mockInst.id
-    })
+    const stillActive = [...groups.values()].some(g => g.acId === p.assetClassId && g.instId === p.institutionId)
     if (stillActive) continue
     try {
       const entries = await api.get<ProductEntry[]>(`/api/entries?productId=${p.id}&month=${month}&year=${year}`)
@@ -418,7 +408,6 @@ export async function upsertAggregatedProducts(
     }
   }
 
-  setLastRefresh(email, new Date().toISOString())
   return { upserted }
 }
 

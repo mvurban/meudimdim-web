@@ -2,14 +2,28 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { createPortal } from 'react-dom'
-import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
-import { getAcoes, setAcoes, getInstitutions, getAssetClasses, mockPrecos, getStockDividends, setStockDividends, getUserPrefs, setUserPrefs, upsertAggregatedProducts, getLastRefresh } from '@/lib/mock-store'
-import type { AcaoItem, UserPrefs } from '@/lib/mock-store'
+import { PageLoader } from '@/components/ui/PageLoader'
+import { mockPrecos } from '@/lib/mock-store'
+import { upsertAggregatedProducts } from '@/lib/mock-store'
+import { api } from '@/lib/api'
 import type { Institution, AssetClass, StockDividend } from '@/types'
 import { AcaoDividendModal } from '@/components/acoes/AcaoDividendModal'
 import { RefreshModal } from '@/components/acoes/RefreshModal'
+
+// Tipo local alinhado com o modelo StockTicker da API
+interface AcaoItem {
+  id: string
+  ticker: string
+  institutionId: string
+  assetClassId: string
+  quantidade: number
+  precoMedio: number
+  precoFechamento: number
+  precoAtual: number
+  lastRefresh?: string | null
+}
 
 type FormState = {
   ticker: string
@@ -19,7 +33,12 @@ type FormState = {
   precoMedio: string
 }
 
+type PageSize = 10 | 20 | 50 | 100
+
 const EMPTY: FormState = { ticker: '', institutionId: '', assetClassId: '', quantidade: '', precoMedio: '' }
+const PREFS_KEY = 'mdd_acoes_page_size'
+const LAST_REFRESH_KEY = 'mdd_acoes_last_refresh'
+const REFRESH_THRESHOLD_MS = 15 * 60 * 1000
 
 function fmt(value: number) {
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -29,9 +48,6 @@ function parseBRL(value: string): number {
   return parseFloat(value.replace(',', '.')) || 0
 }
 
-const REFRESH_THRESHOLD_MS = 15 * 60 * 1000 // 15 minutos
-const FAKE_ERROR_RATE = 0.18
-
 function shouldAutoRefresh(lastRefresh: string | null): boolean {
   if (!lastRefresh) return true
   return Date.now() - new Date(lastRefresh).getTime() > REFRESH_THRESHOLD_MS
@@ -40,8 +56,7 @@ function shouldAutoRefresh(lastRefresh: string | null): boolean {
 function formatRefreshTime(iso: string): string {
   const d = new Date(iso)
   const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
+  const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000)
   if (diffMin < 1) return 'agora mesmo'
   if (diffMin < 60) return `há ${diffMin} min`
   const diffH = Math.floor(diffMin / 60)
@@ -55,77 +70,108 @@ function initials(name: string): string {
   return words.map(w => w[0]).join('').slice(0, 3).toUpperCase()
 }
 
+function getStoredPageSize(): PageSize {
+  try {
+    const v = localStorage.getItem(PREFS_KEY)
+    const n = parseInt(v ?? '')
+    return ([10, 20, 50, 100] as PageSize[]).includes(n as PageSize) ? (n as PageSize) : 20
+  } catch { return 20 }
+}
+
+function setStoredPageSize(size: PageSize) {
+  try { localStorage.setItem(PREFS_KEY, String(size)) } catch { /* noop */ }
+}
+
+function getStoredLastRefresh(): string | null {
+  try { return localStorage.getItem(LAST_REFRESH_KEY) } catch { return null }
+}
+
+function setStoredLastRefresh(iso: string) {
+  try { localStorage.setItem(LAST_REFRESH_KEY, iso) } catch { /* noop */ }
+}
+
+const FAKE_ERROR_RATE = 0.18
+
 function AcoesPageInner() {
-  const { data: session } = useSession()
   const searchParams = useSearchParams()
-  const [items, setItemsState] = useState<AcaoItem[]>([])
+  const [items, setItems] = useState<AcaoItem[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
-  const [assetClasses, setAssetClassesState] = useState<AssetClass[]>([])
+  const [assetClasses, setAssetClasses] = useState<AssetClass[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
   const [dividendAcao, setDividendAcao] = useState<string | null>(null)
-  const [stockDividends, setStockDividendsState] = useState<StockDividend[]>([])
+  const [stockDividends, setStockDividends] = useState<StockDividend[]>([])
   const [institutionFilter, setInstitutionFilter] = useState(searchParams.get('institution') ?? '')
   const [assetClassFilter, setAssetClassFilter] = useState(searchParams.get('assetClass') ?? '')
   const [tickerSearch, setTickerSearch] = useState('')
   const [removeModal, setRemoveModal] = useState<{ id: string; ticker: string } | null>(null)
-  const [pageSize, setPageSizeState] = useState<UserPrefs['acoesPageSize']>(20)
+  const [pageSize, setPageSizeState] = useState<PageSize>(20)
   const [currentPage, setCurrentPage] = useState(1)
   const [showRefreshModal, setShowRefreshModal] = useState(false)
-  const [lastRefresh, setLastRefresh] = useState<string | null>(null)
+  const [lastRefresh, setLastRefreshState] = useState<string | null>(null)
   const [refreshSummary, setRefreshSummary] = useState<{ tickers: number; products: number } | null>(null)
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const email = session?.user?.email ?? null
-
+  // Carrega dados da API ao montar
   useEffect(() => {
-    if (!email) return
-    const loadedItems = getAcoes(email)
-    setItemsState(loadedItems)
-    setInstitutions(getInstitutions(email))
-    setAssetClassesState(getAssetClasses(email).filter(ac => ac.isAcao))
-    setStockDividendsState(getStockDividends(email))
-    setPageSizeState(getUserPrefs(email).acoesPageSize)
-    const lr = getLastRefresh(email)
-    setLastRefresh(lr)
-    // Auto-refresh ao carregar se > 15 min ou nunca atualizado
-    if (shouldAutoRefresh(lr) && loadedItems.length > 0) {
-      runSilentRefresh(loadedItems, email)
-    }
-  }, [email]) // eslint-disable-line react-hooks/exhaustive-deps
+    const lr = getStoredLastRefresh()
+    setLastRefreshState(lr)
+    setPageSizeState(getStoredPageSize())
+
+    Promise.all([
+      api.get<AcaoItem[]>('/api/acoes'),
+      api.get<Institution[]>('/api/institutions'),
+      api.get<AssetClass[]>('/api/assetclasses'),
+      api.get<StockDividend[]>('/api/stock-dividends'),
+    ]).then(([acoes, insts, acs, divs]) => {
+      setItems(acoes)
+      setInstitutions(insts)
+      setAssetClasses(acs.filter(ac => ac.isAcao))
+      // API retorna stockTickerId; mapeamos para acaoId usado pelo AcaoDividendModal
+      setStockDividends(divs.map((d: any) => ({ ...d, acaoId: d.stockTickerId })))
+      setLoading(false)
+
+      if (shouldAutoRefresh(lr) && acoes.length > 0) {
+        runSilentRefresh(acoes)
+      }
+    }).catch(() => setLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh ao retornar à aba
   useEffect(() => {
-    if (!email) return
     function onVisibility() {
       if (document.visibilityState !== 'visible') return
-      const lr = getLastRefresh(email!)
+      const lr = getStoredLastRefresh()
       if (!shouldAutoRefresh(lr)) return
-      const current = getAcoes(email!)
-      if (current.length > 0) runSilentRefresh(current, email!)
+      setItems(current => {
+        if (current.length > 0) runSilentRefresh(current)
+        return current
+      })
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [email]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  function setItems(updater: AcaoItem[] | ((prev: AcaoItem[]) => AcaoItem[])) {
-    setItemsState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      if (email) setAcoes(email, next)
-      return next
-    })
-  }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function getInstitution(id: string) {
     return institutions.find(i => i.id === id)
   }
 
-  function saveDividends(acaoId: string, updated: StockDividend[]) {
-    const others = stockDividends.filter(d => d.acaoId !== acaoId)
-    const next = [...others, ...updated]
-    setStockDividendsState(next)
-    if (email) setStockDividends(email, next)
+  async function saveDividends(acaoId: string, updated: StockDividend[]) {
+    try {
+      const result: any[] = await api.put(`/api/stock-dividends/replace/${acaoId}`, {
+        dividends: updated.map(d => ({ date: d.date, dividendo: d.dividendo, jcp: d.jcp, outros: d.outros })),
+      })
+      const normalized = result.map((d: any) => ({ ...d, acaoId: d.stockTickerId }))
+      setStockDividends(prev => [
+        ...prev.filter(d => d.acaoId !== acaoId),
+        ...normalized,
+      ])
+    } catch (e) {
+      console.error('Erro ao salvar dividendos:', e)
+    }
   }
 
   function dividendTotalFor(acaoId: string) {
@@ -158,79 +204,100 @@ function AcoesPageInner() {
     setForm(EMPTY)
   }
 
-  function save() {
+  async function save() {
     const ticker = form.ticker.trim().toUpperCase()
     const quantidade = parseInt(form.quantidade) || 0
     const precoMedio = parseBRL(form.precoMedio)
     if (!ticker || !form.institutionId || !form.assetClassId || quantidade <= 0 || precoMedio <= 0) return
 
-    const existente = items.find(a => a.id === editing)
-    const precos = existente
-      ? { precoFechamento: existente.precoFechamento, precoAtual: existente.precoAtual }
-      : mockPrecos(precoMedio)
-
-    const item: AcaoItem = {
-      id: editing ?? `a${Date.now()}`,
-      ticker,
-      institutionId: form.institutionId,
-      assetClassId: form.assetClassId,
-      quantidade,
-      precoMedio,
-      ...precos,
+    setSaving(true)
+    try {
+      if (adding) {
+        const { precoFechamento, precoAtual } = mockPrecos(precoMedio)
+        const newItem: AcaoItem = await api.post('/api/acoes', {
+          ticker, institutionId: form.institutionId, assetClassId: form.assetClassId,
+          quantidade, precoMedio, precoFechamento, precoAtual,
+        })
+        const newAcoes = [...items, newItem]
+        setItems(newAcoes)
+        await recalcAggregated(newAcoes)
+      } else {
+        const existente = items.find(a => a.id === editing)!
+        const updated: AcaoItem = await api.put(`/api/acoes/${editing}`, {
+          ticker, institutionId: form.institutionId, assetClassId: form.assetClassId,
+          quantidade, precoMedio,
+          precoFechamento: existente.precoFechamento,
+          precoAtual: existente.precoAtual,
+        })
+        const newAcoes = items.map(a => a.id === editing ? updated : a)
+        setItems(newAcoes)
+        await recalcAggregated(newAcoes)
+      }
+      cancel()
+    } catch (e) {
+      console.error('Erro ao salvar ação:', e)
+    } finally {
+      setSaving(false)
     }
-
-    const newAcoes = adding
-      ? [...items, item]
-      : items.map(a => a.id === editing ? item : a)
-    saveAcoesAndRecalc(newAcoes)
-    cancel()
   }
 
-  function confirmRemove() {
+  async function confirmRemove() {
     if (!removeModal) return
-    const newAcoes = items.filter(a => a.id !== removeModal.id)
-    saveAcoesAndRecalc(newAcoes)
-    setRemoveModal(null)
+    setSaving(true)
+    try {
+      await api.delete(`/api/acoes/${removeModal.id}`)
+      const newAcoes = items.filter(a => a.id !== removeModal.id)
+      setItems(newAcoes)
+      setRemoveModal(null)
+      await recalcAggregated(newAcoes)
+    } catch (e) {
+      console.error('Erro ao remover ação:', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  // Persiste acoes e recalcula agregados com os preços já em cache (sem Yahoo Finance)
-  async function saveAcoesAndRecalc(newAcoes: AcaoItem[]) {
-    if (!email) return
-    setAcoes(email, newAcoes)
-    setItemsState(newAcoes)
+  async function recalcAggregated(newAcoes: AcaoItem[]) {
+    if (newAcoes.length === 0) return
     try {
       const now = new Date()
-      await upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
+      await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
     } catch (e) {
       console.error('Erro ao recalcular agregados:', e)
     }
   }
 
-  function changePageSize(size: UserPrefs['acoesPageSize']) {
+  function changePageSize(size: PageSize) {
     setPageSizeState(size)
     setCurrentPage(1)
-    if (email) setUserPrefs(email, { acoesPageSize: size })
+    setStoredPageSize(size)
   }
 
-  // Aplica novos preços, persiste e cria agregados — compartilhado entre modal e refresh silencioso
   async function applyRefreshResults(
     currentAcoes: AcaoItem[],
     updated: { id: string; precoFechamento: number; precoAtual: number }[],
-    emailParam: string,
   ): Promise<{ upserted: number }> {
+    if (updated.length > 0) {
+      try {
+        const res = await api.put<{ updated: number; lastRefresh: string }>('/api/acoes/refresh', { updates: updated })
+        const nowIso = res.lastRefresh ?? new Date().toISOString()
+        setStoredLastRefresh(nowIso)
+        setLastRefreshState(nowIso)
+      } catch {
+        const nowIso = new Date().toISOString()
+        setStoredLastRefresh(nowIso)
+        setLastRefreshState(nowIso)
+      }
+    }
     const updatedAcoes = currentAcoes.map(a => {
       const u = updated.find(r => r.id === a.id)
       return u ? { ...a, precoFechamento: u.precoFechamento, precoAtual: u.precoAtual } : a
     })
-    setAcoes(emailParam, updatedAcoes)
-    setItemsState(updatedAcoes)
-    const nowIso = new Date().toISOString()
-    localStorage.setItem(`mdd_${emailParam}_lastRefresh`, nowIso)
-    setLastRefresh(nowIso)
+    setItems(updatedAcoes)
     let upserted = 0
     try {
       const now = new Date()
-      const result = await upsertAggregatedProducts(emailParam, now.getMonth() + 1, now.getFullYear())
+      const result = await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
       upserted = result.upserted
     } catch (e) {
       console.error('Erro ao criar produtos agregados:', e)
@@ -238,15 +305,12 @@ function AcoesPageInner() {
     return { upserted }
   }
 
-  // Callback do modal de cotações (com progresso visual)
   async function handleRefreshDone(updated: { id: string; precoFechamento: number; precoAtual: number }[]) {
-    if (!email) return
-    const { upserted } = await applyRefreshResults(items, updated, email)
+    const { upserted } = await applyRefreshResults(items, updated)
     setRefreshSummary({ tickers: updated.length, products: upserted })
   }
 
-  // Refresh silencioso — sem modal, sem delay por ticker
-  async function runSilentRefresh(currentAcoes: AcaoItem[], emailParam: string) {
+  async function runSilentRefresh(currentAcoes: AcaoItem[]) {
     setIsAutoRefreshing(true)
     const updated = currentAcoes
       .filter(() => Math.random() >= FAKE_ERROR_RATE)
@@ -254,7 +318,7 @@ function AcoesPageInner() {
         const { precoFechamento, precoAtual } = mockPrecos(a.precoFechamento || a.precoMedio)
         return { id: a.id, precoFechamento, precoAtual }
       })
-    await applyRefreshResults(currentAcoes, updated, emailParam)
+    await applyRefreshResults(currentAcoes, updated)
     setIsAutoRefreshing(false)
   }
 
@@ -273,8 +337,23 @@ function AcoesPageInner() {
   const totalAtual = filteredItems.reduce((s, a) => s + a.quantidade * (a.precoAtual || a.precoMedio), 0)
   const rendimentoTotal = totalInvestido > 0 ? ((totalAtual / totalInvestido) - 1) * 100 : 0
 
+  if (loading) return <PageLoader />
+
   return (
     <AppShell>
+      {/* Overlay de salvamento */}
+      {saving && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+            <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>Salvando...</span>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
@@ -611,10 +690,10 @@ function AcoesPageInner() {
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Por página:</span>
               <select
                 value={pageSize}
-                onChange={e => changePageSize(Number(e.target.value) as UserPrefs['acoesPageSize'])}
+                onChange={e => changePageSize(Number(e.target.value) as PageSize)}
                 style={filterSelectStyle}
               >
-                {([10, 20, 50, 100] as UserPrefs['acoesPageSize'][]).map(size => (
+                {([10, 20, 50, 100] as PageSize[]).map(size => (
                   <option key={size} value={size}>{size}</option>
                 ))}
               </select>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
-import { deleteUserData } from '@/lib/mock-store'
+import { api } from '@/lib/api'
 
 export default function ExcluirContaPage() {
   const { data: session } = useSession()
@@ -11,10 +11,15 @@ export default function ExcluirContaPage() {
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
-    const email = session?.user?.email
-    if (!email) return
+    if (!session?.user?.email) return
     setLoading(true)
-    deleteUserData(email)
+    try {
+      await api.delete('/api/account')
+    } catch {
+      // mesmo com erro na API, limpa local e desloga
+    }
+    // Limpa localStorage residual
+    try { localStorage.clear() } catch { /* noop */ }
     await signOut({ callbackUrl: '/' })
   }
 

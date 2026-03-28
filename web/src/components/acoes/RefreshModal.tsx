@@ -3,7 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { mockPrecos } from '@/lib/mock-store'
-import type { AcaoItem } from '@/lib/mock-store'
+
+interface AcaoItem {
+  id: string
+  ticker: string
+  precoMedio: number
+  precoFechamento: number
+  precoAtual: number
+}
 
 interface RefreshResult {
   id: string

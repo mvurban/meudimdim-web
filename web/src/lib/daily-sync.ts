@@ -1,4 +1,5 @@
-import { getAcoes, setAcoes, mockPrecos, upsertAggregatedProducts, setBenchmarks, setLastRefresh } from './mock-store'
+import { mockPrecos, upsertAggregatedProducts, setBenchmarks } from './mock-store'
+import { api } from './api'
 import type { BenchmarkEntry } from '@/types'
 
 const FAKE_ERROR_RATE = 0.18
@@ -28,30 +29,28 @@ export async function runDailySyncIfNeeded(
 
   // 1. Atualizar cotações das ações em background
   try {
-    const acoes = getAcoes(email)
+    const acoes: { id: string; ticker: string; precoMedio: number; precoFechamento: number; precoAtual: number }[] =
+      await api.get('/api/acoes')
+
     if (acoes.length > 0) {
       const failed: string[] = []
-      const updated = acoes
-        .map(a => {
-          if (Math.random() < FAKE_ERROR_RATE) {
-            failed.push(a.ticker)
-            return null
-          }
-          const { precoFechamento, precoAtual } = mockPrecos(a.precoFechamento || a.precoMedio)
-          return { id: a.id, precoFechamento, precoAtual }
-        })
-        .filter(Boolean) as { id: string; precoFechamento: number; precoAtual: number }[]
+      const updates: { id: string; precoFechamento: number; precoAtual: number }[] = []
 
-      const updatedAcoes = acoes.map(a => {
-        const u = updated.find(r => r.id === a.id)
-        return u ? { ...a, precoFechamento: u.precoFechamento, precoAtual: u.precoAtual } : a
-      })
+      for (const a of acoes) {
+        if (Math.random() < FAKE_ERROR_RATE) {
+          failed.push(a.ticker)
+          continue
+        }
+        const { precoFechamento, precoAtual } = mockPrecos(a.precoFechamento || a.precoMedio)
+        updates.push({ id: a.id, precoFechamento, precoAtual })
+      }
 
-      setAcoes(email, updatedAcoes)
-      setLastRefresh(email, new Date().toISOString())
+      if (updates.length > 0) {
+        await api.put('/api/acoes/refresh', { updates })
+      }
 
       const now = new Date()
-      await upsertAggregatedProducts(email, now.getMonth() + 1, now.getFullYear())
+      await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
 
       if (failed.length > 0) {
         errors.push(`Não foi possível atualizar ${failed.length} ação(ões): ${failed.join(', ')}`)
