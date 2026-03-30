@@ -36,36 +36,37 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 - [x] uma dúvida a barra de progresso sendo feita um a um demora mais? se sim atualize a barra de 3 em 3 açoes, senão, mantém.
 - [ ] fechamento ainda com valor errado. Veja na internet como se busca esse valor.
 - [ ] Ao abrir a lista de ações pela primeira vez, deixe o rendimento do dia como ordenado do maior pro menor.
+- [ ] Existe uma forma de salvar as cotações das ações no banco de forma mais rápida, talves em bloco? Ou em background?
 
 - [ ] Quando falhar a busca de uma ação no yahoo financy é possível sinalizar a ação e colocar um reload somente nela pro usuário fazer apenas
- a atualização dela? Melhor, que tal se der algum erro a gente colocar no sininho e disponibilizar no sininho um refresh, neste caso, aí se o user clicar ali, a gente tenta atualizar, se conseguir o alerta fica verde. Hoje os alertas estão todos em branco, podemos mudar pra vermelhor ou amarelo, e quando concertar fica verde. O que acha desse mecanismo, não implemente vamos debater.
+      a atualização dela? Melhor, que tal se der algum erro a gente colocar no sininho e disponibilizar no sininho um refresh, neste caso, aí se o user clicar ali, a gente tenta atualizar, se conseguir o alerta fica verde. Hoje os alertas estão todos em branco, podemos mudar pra vermelhor ou amarelo, e quando concertar fica verde. O que acha desse mecanismo, não implemente vamos debater.
 
 Dúvidas que precisamos alinhar:
 
-  1. Quem dispara a notificação de falha?
-  Só o refresh manual (modal)? Ou também o auto-refresh silencioso? Se for os dois, o usuário pode acordar com um
-  sininho vermelho sem ter feito nada.
+1. Quem dispara a notificação de falha?
+   Só o refresh manual (modal)? Ou também o auto-refresh silencioso? Se for os dois, o usuário pode acordar com um
+   sininho vermelho sem ter feito nada.
 
-  2. O que acontece com os tickers que já estão no sininho quando a tentativa de retry tem sucesso?
-  Remove automaticamente? Fica verde por X segundos e some? Fica verde indefinidamente até o próximo refresh?
+2. O que acontece com os tickers que já estão no sininho quando a tentativa de retry tem sucesso?
+   Remove automaticamente? Fica verde por X segundos e some? Fica verde indefinidamente até o próximo refresh?
 
-  3. E se o retry também falhar?
-  Mantém vermelho? Mostra contador de tentativas? Permite tentar de novo?
+3. E se o retry também falhar?
+   Mantém vermelho? Mostra contador de tentativas? Permite tentar de novo?
 
-  4. Granularidade da notificação:
-  Uma notificação por ticker que falhou? Ou uma notificação única "3 tickers falharam" com lista expandível?
+4. Granularidade da notificação:
+   Uma notificação por ticker que falhou? Ou uma notificação única "3 tickers falharam" com lista expandível?
 
-  5. O sininho hoje:
-  Como ele está implementado atualmente? É só visual ou já tem backend/persistência? Isso vai determinar o esforço de
-  implementação.
+5. O sininho hoje:
+   Como ele está implementado atualmente? É só visual ou já tem backend/persistência? Isso vai determinar o esforço de
+   implementação.
 
-  ---
-  O que você pensa sobre esses pontos?
+---
 
- 1- Isso mesmo, esse é o comportamento esperado. 2- Mantém no sininho, pela regra, por x horas, tira o reload e coloca
- um V de ok. 3- Mantém o reload, sem contador, permite tentar denovo. 4- se for mais de 2 tickets cria lista expandível
- 5- Eu ahco que já tem backend, dá uma olhada em ./../meudimdim-api
+O que você pensa sobre esses pontos?
 
+1- Isso mesmo, esse é o comportamento esperado. 2- Mantém no sininho, pela regra, por x horas, tira o reload e coloca
+um V de ok. 3- Mantém o reload, sem contador, permite tentar denovo. 4- se for mais de 2 tickets cria lista expandível
+5- Eu ahco que já tem backend, dá uma olhada em ./../meudimdim-api
 
 ---
 
@@ -108,7 +109,6 @@ Dúvidas que precisamos alinhar:
 ---
 
 # Cache
-
 
 # FASE 2
 
@@ -185,64 +185,64 @@ Dúvidas que precisamos alinhar:
 
 - [+] Cache de Tabelas Auxiliares (ref-cache)
 
-   Contexto
+  Contexto
 
-   Atualmente, toda vez que o usuário abre a página de Produtos ou Ações, o sistema busca na API as tabelas auxiliares
-   (categorias, classes de ativo, instituições, regiões, liquidez). Esses dados mudam raramente — só quando o usuário
-   edita em Configurações. O objetivo é fazer uma única busca e reusar localmente, invalidando apenas a tabela que foi
-   alterada.
+  Atualmente, toda vez que o usuário abre a página de Produtos ou Ações, o sistema busca na API as tabelas auxiliares
+  (categorias, classes de ativo, instituições, regiões, liquidez). Esses dados mudam raramente — só quando o usuário
+  edita em Configurações. O objetivo é fazer uma única busca e reusar localmente, invalidando apenas a tabela que foi
+  alterada.
 
-   ---
-   Estratégia: Módulo ref-cache (in-memory + localStorage)
+  ***
 
-   - In-memory (Map): acesso imediato nas navegações dentro da sessão (ex: sair e voltar para Produtos)
-   - localStorage: persiste entre sessões (ex: fechar e reabrir o browser)
-   - Invalidação por tabela: cada CRUD de configuração invalida apenas a chave correspondente
-   - Sem TTL: os dados são válidos indefinidamente — só invalidam quando há mutação
+  Estratégia: Módulo ref-cache (in-memory + localStorage)
+  - In-memory (Map): acesso imediato nas navegações dentro da sessão (ex: sair e voltar para Produtos)
+  - localStorage: persiste entre sessões (ex: fechar e reabrir o browser)
+  - Invalidação por tabela: cada CRUD de configuração invalida apenas a chave correspondente
+  - Sem TTL: os dados são válidos indefinidamente — só invalidam quando há mutação
 
-   Tabelas em cache (5 ref keys)
+  Tabelas em cache (5 ref keys)
 
-   ┌──────────────┬───────────────────┬──────────────────────────────────────┐
-   │     Key      │     Endpoint      │               CRUD em                │
-   ├──────────────┼───────────────────┼──────────────────────────────────────┤
-   │ categories   │ /api/categories   │ /configuracoes/categorias/page.tsx   │
-   ├──────────────┼───────────────────┼──────────────────────────────────────┤
-   │ assetclasses │ /api/assetclasses │ /configuracoes/classes/page.tsx      │
-   ├──────────────┼───────────────────┼──────────────────────────────────────┤
-   │ institutions │ /api/institutions │ /configuracoes/instituicoes/page.tsx │
-   ├──────────────┼───────────────────┼──────────────────────────────────────┤
-   │ regions      │ /api/regions      │ /configuracoes/regioes/page.tsx      │
-   ├──────────────┼───────────────────┼──────────────────────────────────────┤
-   │ liquidity    │ /api/liquidity    │ /configuracoes/liquidez/page.tsx     │
-   └──────────────┴───────────────────┴──────────────────────────────────────┘
+  ┌──────────────┬───────────────────┬──────────────────────────────────────┐
+  │ Key │ Endpoint │ CRUD em │
+  ├──────────────┼───────────────────┼──────────────────────────────────────┤
+  │ categories │ /api/categories │ /configuracoes/categorias/page.tsx │
+  ├──────────────┼───────────────────┼──────────────────────────────────────┤
+  │ assetclasses │ /api/assetclasses │ /configuracoes/classes/page.tsx │
+  ├──────────────┼───────────────────┼──────────────────────────────────────┤
+  │ institutions │ /api/institutions │ /configuracoes/instituicoes/page.tsx │
+  ├──────────────┼───────────────────┼──────────────────────────────────────┤
+  │ regions │ /api/regions │ /configuracoes/regioes/page.tsx │
+  ├──────────────┼───────────────────┼──────────────────────────────────────┤
+  │ liquidity │ /api/liquidity │ /configuracoes/liquidez/page.tsx │
+  └──────────────┴───────────────────┴──────────────────────────────────────┘
 
-   Não entra em cache: produtos, entries, dividends, ações (dados dinâmicos).
+  Não entra em cache: produtos, entries, dividends, ações (dados dinâmicos).
 
-   ---
-   Arquivos a criar/modificar
+  ***
 
-   1. Novo: web/src/lib/ref-cache.ts
+  Arquivos a criar/modificar
+  1.  Novo: web/src/lib/ref-cache.ts
 
-   Módulo singleton simples — sem React, sem Context:
+  Módulo singleton simples — sem React, sem Context:
 
-   export type RefKey = 'categories' | 'assetclasses' | 'institutions' | 'regions' | 'liquidity'
+  export type RefKey = 'categories' | 'assetclasses' | 'institutions' | 'regions' | 'liquidity'
 
-   const LS_PREFIX = 'mdd_ref_'
-   const mem = new Map<RefKey, unknown[]>()
+  const LS*PREFIX = 'mdd_ref*'
+  const mem = new Map<RefKey, unknown[]>()
 
-   export const refCache = {
-      get<T>(key: RefKey): T[] | null {
-      if (mem.has(key)) return mem.get(key) as T[]
-      try {
-         const raw = localStorage.getItem(LS_PREFIX + key)
-         if (raw) {
-            const data = JSON.parse(raw) as T[]
-            mem.set(key, data)
-            return data
-         }
-      } catch { /* noop */ }
-      return null
-      },
+  export const refCache = {
+  get<T>(key: RefKey): T[] | null {
+  if (mem.has(key)) return mem.get(key) as T[]
+  try {
+  const raw = localStorage.getItem(LS_PREFIX + key)
+  if (raw) {
+  const data = JSON.parse(raw) as T[]
+  mem.set(key, data)
+  return data
+  }
+  } catch { /_ noop _/ }
+  return null
+  },
 
       set<T>(key: RefKey, data: T[]): void {
       mem.set(key, data)
@@ -253,96 +253,93 @@ Dúvidas que precisamos alinhar:
       mem.delete(key)
       try { localStorage.removeItem(LS_PREFIX + key) } catch { /* noop */ }
       },
-   }
 
-   2. Novo: helper getRef<T> (dentro do próprio ref-cache.ts)
+  }
+  2.  Novo: helper getRef<T> (dentro do próprio ref-cache.ts)
 
-   Evita repetição nos Promise.all das páginas:
+  Evita repetição nos Promise.all das páginas:
 
-   export async function getRef<T>(key: RefKey, endpoint: string): Promise<T[]> {
-      const cached = refCache.get<T>(key)
-      if (cached) return cached
-      const data = await api.get<T[]>(endpoint)
-      refCache.set(key, data)
-      return data
-   }
+  export async function getRef<T>(key: RefKey, endpoint: string): Promise<T[]> {
+  const cached = refCache.get<T>(key)
+  if (cached) return cached
+  const data = await api.get<T[]>(endpoint)
+  refCache.set(key, data)
+  return data
+  }
 
-   ---
-   3. web/src/app/produtos/page.tsx
+  ***
+  3.  web/src/app/produtos/page.tsx
 
-   Substituir o Promise.all das tabelas auxiliares:
+  Substituir o Promise.all das tabelas auxiliares:
 
-   // Antes:
-   api.get<Category[]>('/api/categories'),
-   api.get<AssetClass[]>('/api/assetclasses'),
-   ...
+  // Antes:
+  api.get<Category[]>('/api/categories'),
+  api.get<AssetClass[]>('/api/assetclasses'),
+  ...
 
-   // Depois:
-   getRef<Category>('categories', '/api/categories'),
-   getRef<AssetClass>('assetclasses', '/api/assetclasses'),
-   getRef<Institution>('institutions', '/api/institutions'),
-   getRef<Region>('regions', '/api/regions'),
-   getRef<LiquidityOption>('liquidity', '/api/liquidity'),
-   api.get<Product[]>('/api/products'),  // produtos: sem cache (dinâmico)
+  // Depois:
+  getRef<Category>('categories', '/api/categories'),
+  getRef<AssetClass>('assetclasses', '/api/assetclasses'),
+  getRef<Institution>('institutions', '/api/institutions'),
+  getRef<Region>('regions', '/api/regions'),
+  getRef<LiquidityOption>('liquidity', '/api/liquidity'),
+  api.get<Product[]>('/api/products'), // produtos: sem cache (dinâmico)
+  4.  web/src/app/acoes/page.tsx
 
-   4. web/src/app/acoes/page.tsx
+  Substituir as duas chamadas de ref no Promise.all:
 
-   Substituir as duas chamadas de ref no Promise.all:
+  // institutions e assetclasses via getRef; acoes e stock-dividends sem cache:
+  getRef<Institution>('institutions', '/api/institutions'),
+  getRef<AssetClass>('assetclasses', '/api/assetclasses'),
+  5.  Páginas de Configuração (5 arquivos)
 
-   // institutions e assetclasses via getRef; acoes e stock-dividends sem cache:
-   getRef<Institution>('institutions', '/api/institutions'),
-   getRef<AssetClass>('assetclasses', '/api/assetclasses'),
+  Após cada mutação (POST, PUT, DELETE), adicionar refCache.invalidate(key):
 
-   5. Páginas de Configuração (5 arquivos)
+  ┌─────────────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
+  │ Arquivo │ Key a invalidar │
+  ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ configuracoes/categorias/page.tsx │ 'categories' (e também 'assetclasses', pois classes exibem categoria) │
+  ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ configuracoes/classes/page.tsx │ 'assetclasses' │
+  ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ configuracoes/instituicoes/page.tsx │ 'institutions' │
+  ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ configuracoes/regioes/page.tsx │ 'regions' │
+  ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ configuracoes/liquidez/page.tsx │ 'liquidity' │
+  └─────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
 
-   Após cada mutação (POST, PUT, DELETE), adicionar refCache.invalidate(key):
+  Padrão de onde inserir (todas as páginas seguem a mesma estrutura):
+  // Após api.post / api.put / api.delete bem-sucedido:
+  refCache.invalidate('institutions')
+  // seguido de: reload local (já existente em cada página)
 
-   ┌─────────────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
-   │               Arquivo               │                            Key a invalidar                            │
-   ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-   │ configuracoes/categorias/page.tsx   │ 'categories' (e também 'assetclasses', pois classes exibem categoria) │
-   ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-   │ configuracoes/classes/page.tsx      │ 'assetclasses'                                                        │
-   ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-   │ configuracoes/instituicoes/page.tsx │ 'institutions'                                                        │
-   ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-   │ configuracoes/regioes/page.tsx      │ 'regions'                                                             │
-   ├─────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-   │ configuracoes/liquidez/page.tsx     │ 'liquidity'                                                           │
-   └─────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
+  ***
 
-   Padrão de onde inserir (todas as páginas seguem a mesma estrutura):
-   // Após api.post / api.put / api.delete bem-sucedido:
-   refCache.invalidate('institutions')
-   // seguido de: reload local (já existente em cada página)
+  Fluxo após implementação
 
-   ---
-   Fluxo após implementação
+  Usuário abre Ações
+  → getRef('institutions') → cache vazio → busca API → salva cache → exibe
+  → getRef('assetclasses') → cache vazio → busca API → salva cache → exibe
 
-   Usuário abre Ações
-      → getRef('institutions') → cache vazio → busca API → salva cache → exibe
-      → getRef('assetclasses') → cache vazio → busca API → salva cache → exibe
+  Usuário navega para Produtos
+  → getRef('institutions') → HIT in-memory → exibe sem request ✓
+  → getRef('categories') → cache vazio → busca API → salva cache → exibe
 
-   Usuário navega para Produtos
-      → getRef('institutions') → HIT in-memory → exibe sem request ✓
-      → getRef('categories')   → cache vazio → busca API → salva cache → exibe
+  Usuário vai em Configurações → Instituições → edita nome
+  → refCache.invalidate('institutions')
 
-   Usuário vai em Configurações → Instituições → edita nome
-      → refCache.invalidate('institutions')
+  Usuário volta para Ações
+  → getRef('institutions') → cache vazio → busca API → salva cache → exibe ✓
 
-   Usuário volta para Ações
-      → getRef('institutions') → cache vazio → busca API → salva cache → exibe ✓
+  ***
 
-   ---
-   Verificação
-
-   1. Abrir Ações → DevTools Network → ver requests de /api/institutions e /api/assetclasses
-   2. Navegar para Produtos → Network → não deve ter request para /api/institutions
-   3. Ir em Configurações → Instituições → criar nova → voltar para Ações → deve buscar da API (cache invalidado)
-   4. Recarregar a página (F5) → Produtos → não deve buscar institutions/regions/etc (localStorage hit)
-   5. Abrir aba anônima (limpa localStorage) → primeiro acesso busca tudo da API
-
-
+  Verificação
+  1.  Abrir Ações → DevTools Network → ver requests de /api/institutions e /api/assetclasses
+  2.  Navegar para Produtos → Network → não deve ter request para /api/institutions
+  3.  Ir em Configurações → Instituições → criar nova → voltar para Ações → deve buscar da API (cache invalidado)
+  4.  Recarregar a página (F5) → Produtos → não deve buscar institutions/regions/etc (localStorage hit)
+  5.  Abrir aba anônima (limpa localStorage) → primeiro acesso busca tudo da API
 
 ---
 
