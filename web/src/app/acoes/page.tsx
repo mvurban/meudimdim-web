@@ -11,6 +11,7 @@ import { api } from '@/lib/api'
 import type { Institution, AssetClass, StockDividend } from '@/types'
 import { AcaoDividendModal } from '@/components/acoes/AcaoDividendModal'
 import { RefreshModal } from '@/components/acoes/RefreshModal'
+import { InfoTooltip } from '@/components/ui/InfoTooltip'
 
 // Tipo local alinhado com o modelo StockTicker da API
 interface AcaoItem {
@@ -114,6 +115,8 @@ function AcoesPageInner() {
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [sortField, setSortField] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   // Carrega dados da API ao montar
   useEffect(() => {
@@ -322,11 +325,47 @@ function AcoesPageInner() {
     setIsAutoRefreshing(false)
   }
 
+  function handleSort(field: string) {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+    setCurrentPage(1)
+  }
+
   const filteredItems = items.filter(a => {
     if (institutionFilter && a.institutionId !== institutionFilter) return false
     if (assetClassFilter && a.assetClassId !== assetClassFilter) return false
     if (tickerSearch && !a.ticker.startsWith(tickerSearch.toUpperCase())) return false
     return true
+  }).slice().sort((a, b) => {
+    if (!sortField) return 0
+    const dir = sortDir === 'asc' ? 1 : -1
+    const precoAtualA = a.precoAtual || a.precoMedio
+    const precoAtualB = b.precoAtual || b.precoMedio
+    switch (sortField) {
+      case 'ticker': return dir * a.ticker.localeCompare(b.ticker)
+      case 'quantidade': return dir * (a.quantidade - b.quantidade)
+      case 'precoMedio': return dir * (a.precoMedio - b.precoMedio)
+      case 'precoFechamento': return dir * ((a.precoFechamento || 0) - (b.precoFechamento || 0))
+      case 'precoAtual': return dir * (precoAtualA - precoAtualB)
+      case 'rendDia': {
+        const ra = (a.precoFechamento || 0) > 0 ? ((precoAtualA / a.precoFechamento) - 1) : 0
+        const rb = (b.precoFechamento || 0) > 0 ? ((precoAtualB / b.precoFechamento) - 1) : 0
+        return dir * (ra - rb)
+      }
+      case 'rendTotal': {
+        const invA = a.quantidade * a.precoMedio
+        const invB = b.quantidade * b.precoMedio
+        const ra = invA > 0 ? ((a.quantidade * precoAtualA + dividendTotalFor(a.id)) / invA - 1) : 0
+        const rb = invB > 0 ? ((b.quantidade * precoAtualB + dividendTotalFor(b.id)) / invB - 1) : 0
+        return dir * (ra - rb)
+      }
+      case 'valorTotal': return dir * (a.quantidade * precoAtualA - b.quantidade * precoAtualB)
+      default: return 0
+    }
   })
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize))
@@ -335,7 +374,11 @@ function AcoesPageInner() {
 
   const totalInvestido = filteredItems.reduce((s, a) => s + a.quantidade * a.precoMedio, 0)
   const totalAtual = filteredItems.reduce((s, a) => s + a.quantidade * (a.precoAtual || a.precoMedio), 0)
-  const rendimentoTotal = totalInvestido > 0 ? ((totalAtual / totalInvestido) - 1) * 100 : 0
+  const totalFechamento = filteredItems.reduce((s, a) => s + a.quantidade * (a.precoFechamento || a.precoMedio), 0)
+  const totalDividendos = filteredItems.reduce((s, a) => s + dividendTotalFor(a.id), 0)
+  const rendimentoTotal = totalInvestido > 0 ? ((totalAtual + totalDividendos) / totalInvestido - 1) * 100 : 0
+  const rendimentoDia = totalFechamento > 0 ? ((totalAtual / totalFechamento) - 1) * 100 : 0
+  const hasConsolidado = filteredItems.length > 0
 
   if (loading) return <PageLoader />
 
@@ -405,8 +448,8 @@ function AcoesPageInner() {
 
       {/* Totalizadores */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <SummaryCard label="Total investido" value={`R$ ${fmt(totalInvestido)}`} />
         <SummaryCard label="Valor atual" value={`R$ ${fmt(totalAtual)}`} />
+        <SummaryCard label="Total investido" value={`R$ ${fmt(totalInvestido)}`} />
         <SummaryCard
           label="Rendimento total"
           value={`${rendimentoTotal >= 0 ? '+' : ''}${fmt(rendimentoTotal)}%`}
@@ -548,14 +591,26 @@ function AcoesPageInner() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <Th>Ação</Th>
-              <Th align="right">Qtd</Th>
-              <Th align="right">Preço de Compra</Th>
-              <Th align="right">Fechamento</Th>
-              <Th align="right">Preço Atual</Th>
-              <Th align="right">Rend. Dia</Th>
-              <Th align="right">Rend. Total</Th>
-              <Th align="right">Valor Total</Th>
+              <Th sortKey="ticker" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Ação</Th>
+              <Th align="right" sortKey="quantidade" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Qtd</Th>
+              <Th align="right" sortKey="precoMedio" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                Preço de Compra<InfoTooltip text="Preço médio de compra por unidade." />
+              </Th>
+              <Th align="right" sortKey="precoFechamento" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                Fechamento<InfoTooltip text="Preço de fechamento do pregão anterior." />
+              </Th>
+              <Th align="right" sortKey="precoAtual" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                Preço Atual<InfoTooltip text="Último preço disponível via Yahoo Finance." />
+              </Th>
+              <Th align="right" sortKey="rendDia" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                Rend. Dia<InfoTooltip text="Variação do preço atual em relação ao fechamento do pregão anterior." />
+              </Th>
+              <Th align="right" sortKey="rendTotal" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                Rend. Total<InfoTooltip text="Variação total incluindo dividendos recebidos, em relação ao preço médio de compra." />
+              </Th>
+              <Th align="right" sortKey="valorTotal" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                Valor Total<InfoTooltip text="Quantidade × preço atual. Não inclui dividendos." />
+              </Th>
               <Th align="right">Ações</Th>
             </tr>
           </thead>
@@ -574,13 +629,44 @@ function AcoesPageInner() {
                 </td>
               </tr>
             )}
+            {hasConsolidado && (
+              <tr style={{ borderBottom: '2px solid var(--border)', background: 'rgba(255,255,255,0.03)' }}>
+                <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-muted)', fontSize: 12 }}>
+                  Consolidado
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>
+                  {filteredItems.reduce((s, a) => s + a.quantidade, 0).toLocaleString('pt-BR')}
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>
+                  R$ {fmt(totalInvestido)}
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  R$ {fmt(totalFechamento)}
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>
+                  R$ {fmt(totalAtual)}
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                  <RendCell value={rendimentoDia} hasData={totalFechamento > 0} />
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                  <RendCell value={rendimentoTotal} hasData={totalInvestido > 0} />
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700 }}>
+                  R$ {fmt(totalAtual)}
+                </td>
+                <td style={tdStyle} />
+              </tr>
+            )}
             {pagedItems.map(item => {
               const inst = getInstitution(item.institutionId)
               const precoAtual = item.precoAtual || item.precoMedio
               const precoFech = item.precoFechamento || item.precoMedio
               const valorTotal = item.quantidade * precoAtual
+              const totalInvestidoItem = item.quantidade * item.precoMedio
+              const dividendos = dividendTotalFor(item.id)
               const rendDia = precoFech > 0 ? ((precoAtual / precoFech) - 1) * 100 : 0
-              const rendTotal = item.precoMedio > 0 ? ((precoAtual / item.precoMedio) - 1) * 100 : 0
+              const rendTotal = totalInvestidoItem > 0 ? ((valorTotal + dividendos) / totalInvestidoItem - 1) * 100 : 0
 
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -771,20 +857,38 @@ function Field({ label, width, children }: { label: string; width?: number; chil
   )
 }
 
-function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+function Th({ children, align = 'left', sortKey, sortField, sortDir, onSort }: {
+  children: React.ReactNode
+  align?: 'left' | 'right'
+  sortKey?: string
+  sortField?: string | null
+  sortDir?: 'asc' | 'desc'
+  onSort?: (key: string) => void
+}) {
+  const active = sortKey && sortField === sortKey
   return (
-    <th style={{
-      textAlign: align,
-      fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: '1.5px',
-      textTransform: 'uppercase',
-      color: 'var(--text-muted)',
-      padding: '0 0 10px',
-      paddingRight: align === 'right' ? 0 : 12,
-      paddingLeft: align === 'right' ? 12 : 0,
-    }}>
+    <th
+      onClick={sortKey && onSort ? () => onSort(sortKey) : undefined}
+      style={{
+        textAlign: align,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: '1.5px',
+        textTransform: 'uppercase',
+        color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+        padding: '0 0 10px',
+        paddingRight: align === 'right' ? 0 : 12,
+        paddingLeft: align === 'right' ? 12 : 0,
+        cursor: sortKey ? 'pointer' : 'default',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+      }}>
       {children}
+      {sortKey && (
+        <span style={{ marginLeft: 4, opacity: active ? 1 : 0.3 }}>
+          {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      )}
     </th>
   )
 }

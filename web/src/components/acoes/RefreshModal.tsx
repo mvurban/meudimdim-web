@@ -30,11 +30,22 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
   const [results, setResults] = useState<RefreshResult[]>([])
   const [failed, setFailed] = useState<{ id: string; ticker: string }[]>([])
   const [done, setDone] = useState(false)
+  const [progress, setProgress] = useState(0)
   const running = useRef(false)
+  const fakeTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (running.current || acoes.length === 0) return
     running.current = true
+
+    // Barra fake: avança até 85% em ~8s, desacelerando conforme se aproxima
+    fakeTimer.current = setInterval(() => {
+      setProgress(p => {
+        if (p >= 85) { clearInterval(fakeTimer.current!); return p }
+        const step = Math.max(0.5, (85 - p) * 0.06)
+        return Math.min(85, p + step)
+      })
+    }, 200)
 
     async function run() {
       try {
@@ -46,16 +57,20 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
         })
         setResults(fetched)
         setFailed(errors)
-        setDone(true)
         onDone(fetched)
       } catch {
         setFailed(acoes.map(a => ({ id: a.id, ticker: a.ticker })))
-        setDone(true)
         onDone([])
+      } finally {
+        clearInterval(fakeTimer.current!)
+        setProgress(100)
+        setDone(true)
       }
     }
 
     run()
+
+    return () => { clearInterval(fakeTimer.current!) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const readyToClose = done && summary != null
@@ -99,15 +114,26 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
           </div>
         </div>
 
-        {/* Spinner enquanto aguarda */}
-        {!done && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 0' }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round"
-              style={{ animation: 'spin 1s linear infinite' }}>
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        {/* Barra de progresso — visível até readyToClose */}
+        {!readyToClose && (
+          <div style={{ padding: '8px 0 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {!done
+                  ? (progress === 0 ? 'Iniciando...' : `Buscando ${acoes.length} tickers...`)
+                  : 'Salvando dados...'}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6' }}>{Math.round(progress)}%</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                borderRadius: 3,
+                background: '#3b82f6',
+                width: `${progress}%`,
+                transition: 'width 0.3s ease',
+              }} />
+            </div>
           </div>
         )}
 
@@ -163,13 +189,6 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
               </div>
             )}
           </div>
-        )}
-
-        {/* Aguardando salvamento */}
-        {done && !readyToClose && (
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, textAlign: 'center' }}>
-            Salvando dados...
-          </p>
         )}
 
         {/* Footer */}

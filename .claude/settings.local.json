@@ -37,7 +37,13 @@
       "WebFetch(domain:www.omi.me)",
       "WebFetch(domain:www.w3tutorials.net)",
       "WebFetch(domain:publicapis.io)",
-      "WebFetch(domain:www.codestudy.net)"
+      "WebFetch(domain:www.codestudy.net)",
+      "WebFetch(domain:www.marketcalls.in)",
+      "WebFetch(domain:cryptocointracker.com)",
+      "WebFetch(domain:ranaroussi.github.io)",
+      "WebFetch(domain:financeapi.net)",
+      "WebFetch(domain:yahooquery.dpguthrie.com)",
+      "WebFetch(domain:www.quantvps.com)"
     ]
   }
 }
