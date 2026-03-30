@@ -16,7 +16,7 @@ export function hasDoneDailySyncToday(email: string): boolean {
 
 export async function runDailySyncIfNeeded(
   email: string,
-  addNotification: (text: string) => Promise<void>,
+  addNotification: (text: string, status?: 'info' | 'warning' | 'error' | 'success', metadata?: string) => Promise<unknown>,
 ): Promise<void> {
   if (hasDoneDailySyncToday(email)) return
 
@@ -46,7 +46,11 @@ export async function runDailySyncIfNeeded(
       }
 
       if (failed.length > 0) {
-        errors.push(`Não foi possível atualizar ${failed.length} ação(ões): ${failed.map(f => f.ticker).join(', ')}`)
+        await addNotification(
+          `Não foi possível atualizar ${failed.length} ação(ões): ${failed.map(f => f.ticker.replace('.SA', '')).join(', ')}`,
+          'error',
+          JSON.stringify({ tickers: failed }),
+        )
       }
     }
   } catch {
@@ -63,8 +67,8 @@ export async function runDailySyncIfNeeded(
     errors.push('Erro ao atualizar dados de benchmark.')
   }
 
-  // Reportar erros no sininho
+  // Reportar erros genéricos no sininho
   for (const msg of errors) {
-    addNotification(msg)
+    await addNotification(msg, 'error')
   }
 }

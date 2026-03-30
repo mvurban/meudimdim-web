@@ -11,6 +11,7 @@ import type { Institution, AssetClass, StockDividend } from '@/types'
 import { AcaoDividendModal } from '@/components/acoes/AcaoDividendModal'
 import { RefreshModal } from '@/components/acoes/RefreshModal'
 import { InfoTooltip } from '@/components/ui/InfoTooltip'
+import { useNotifications } from '@/lib/notification-context'
 
 // Tipo local alinhado com o modelo StockTicker da API
 interface AcaoItem {
@@ -93,6 +94,7 @@ function setStoredLastRefresh(iso: string) {
 
 function AcoesPageInner() {
   const searchParams = useSearchParams()
+  const { addNotification } = useNotifications()
   const [items, setItems] = useState<AcaoItem[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [assetClasses, setAssetClasses] = useState<AssetClass[]>([])
@@ -305,9 +307,19 @@ function AcoesPageInner() {
     return { upserted }
   }
 
-  async function handleRefreshDone(updated: { id: string; precoFechamento: number; precoAtual: number }[]) {
+  async function handleRefreshDone(
+    updated: { id: string; precoFechamento: number; precoAtual: number }[],
+    failed: { id: string; ticker: string }[],
+  ) {
     const { upserted } = await applyRefreshResults(items, updated)
     setRefreshSummary({ tickers: updated.length, products: upserted })
+    if (failed.length > 0) {
+      addNotification(
+        `Falha ao atualizar ${failed.length} ação(ões): ${failed.map(t => t.ticker.replace('.SA', '')).join(', ')}`,
+        'error',
+        JSON.stringify({ tickers: failed }),
+      )
+    }
   }
 
   async function runSilentRefresh(currentAcoes: AcaoItem[]) {

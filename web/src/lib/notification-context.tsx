@@ -9,20 +9,26 @@ export interface Notification {
   createdAt: string;
   text: string;
   isNew: boolean;
+  status: 'info' | 'warning' | 'error' | 'success';
+  metadata?: string; // JSON: { tickers: [{id: string, ticker: string}] }
 }
 
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (text: string) => Promise<void>;
+  addNotification: (text: string, status?: Notification['status'], metadata?: string) => Promise<Notification | null>;
   markAllAsRead: () => Promise<void>;
+  updateNotificationStatus: (id: string, status: Notification['status']) => Promise<void>;
+  clearNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
   notifications: [],
   unreadCount: 0,
-  addNotification: async () => {},
+  addNotification: async () => null,
   markAllAsRead: async () => {},
+  updateNotificationStatus: async () => {},
+  clearNotifications: async () => {},
 });
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
@@ -43,12 +49,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     fetchNotifications();
   }, [status, fetchNotifications]);
 
-  const addNotification = useCallback(async (text: string) => {
+  const addNotification = useCallback(async (
+    text: string,
+    notifStatus: Notification['status'] = 'info',
+    metadata?: string,
+  ): Promise<Notification | null> => {
     try {
-      const created = await api.post<Notification>("/api/notifications", { text });
+      const created = await api.post<Notification>("/api/notifications", { text, status: notifStatus, metadata });
       setNotifications(prev => [created, ...prev]);
+      return created;
     } catch {
-      // silencioso
+      return null;
     }
   }, []);
 
@@ -61,10 +72,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const updateNotificationStatus = useCallback(async (id: string, notifStatus: Notification['status']) => {
+    try {
+      await api.patch(`/api/notifications/${id}`, { status: notifStatus });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: notifStatus } : n));
+    } catch {
+      // silencioso
+    }
+  }, []);
+
+  const clearNotifications = useCallback(async () => {
+    try {
+      await api.delete("/api/notifications");
+      setNotifications([]);
+    } catch {
+      // silencioso
+    }
+  }, []);
+
   const unreadCount = notifications.filter(n => n.isNew).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, markAllAsRead }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, markAllAsRead, updateNotificationStatus, clearNotifications }}>
       {children}
     </NotificationContext.Provider>
   );

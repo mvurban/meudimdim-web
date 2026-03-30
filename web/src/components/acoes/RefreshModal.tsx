@@ -21,7 +21,7 @@ interface RefreshResult {
 
 interface RefreshModalProps {
   acoes: AcaoItem[]
-  onDone: (updated: RefreshResult[]) => void
+  onDone: (updated: RefreshResult[], failed: { id: string; ticker: string }[]) => void
   onClose: () => void
   summary?: { tickers: number; products: number } | null
 }
@@ -57,10 +57,11 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
         })
         setResults(fetched)
         setFailed(errors)
-        onDone(fetched)
+        onDone(fetched, errors)
       } catch {
-        setFailed(acoes.map(a => ({ id: a.id, ticker: a.ticker })))
-        onDone([])
+        const allFailed = acoes.map(a => ({ id: a.id, ticker: a.ticker }))
+        setFailed(allFailed)
+        onDone([], allFailed)
       } finally {
         clearInterval(fakeTimer.current!)
         setProgress(100)
