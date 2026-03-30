@@ -115,8 +115,8 @@ function AcoesPageInner() {
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [sortField, setSortField] = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [sortField, setSortField] = useState<string | null>('rendDia')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   // Carrega dados da API ao montar
   useEffect(() => {

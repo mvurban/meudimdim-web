@@ -31,13 +31,6 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Em Andamento
 
-- [x] os dividendos de uma ação devem mudar o rend. total, mas não o valor total. Apenas coloca o dividendo como parte do rendimento da ação, apenas total, sem mexer no diário.
-- [x] vamos criar um sinal no cabeçalho com um i de informação ou algo do tipo pra quando o usuário ponterar o mouse, poder ver um tooltip com uma explicação. Isso vai ser padrão no sistema todo, o mesmo simbolo.
-- [x] uma dúvida a barra de progresso sendo feita um a um demora mais? se sim atualize a barra de 3 em 3 açoes, senão, mantém.
-- [ ] fechamento ainda com valor errado. Veja na internet como se busca esse valor.
-- [ ] Ao abrir a lista de ações pela primeira vez, deixe o rendimento do dia como ordenado do maior pro menor.
-- [ ] Existe uma forma de salvar as cotações das ações no banco de forma mais rápida, talves em bloco? Ou em background?
-
 
 ---
 
@@ -99,6 +92,15 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 # CONCLUÍDOS - [x]
 
+- [x] 2026-03-30 15:30 — Salvar cotações das ações no banco em lote: substituído N queries individuais por uma única query SQL com CASE WHEN, reduzindo o round-trip ao banco para 1 independente da quantidade de tickers.
+- [x] 2026-03-30 15:30 — Ao abrir a lista de ações pela primeira vez, ordenar por rendimento do dia do maior para o menor (sort padrão).
+- [x] 2026-03-30 — Retry de ticker com falha no sininho agora salva os preços no banco (PUT /api/acoes/refresh) e marca a notificação como resolvida (verde com ✓).
+- [x] 2026-03-30 — Botão "Limpar tudo" no dropdown do sininho para apagar todas as notificações do usuário.
+- [x] 2026-03-30 — Sininho com status colorido por severidade (vermelho/amarelo/verde/cinza), indicador visual na borda de cada notificação, botão de retry para tickers com falha e lista expandível quando há mais de 2 tickers.
+- [x] 2026-03-30 — Fechamento da ação buscando valor errado do Yahoo Finance. Corrigido usando range=1d para que chartPreviousClose retorne o pregão anterior correto. Adicionado timeout de 5s por ticker para evitar travamento do lote.
+- [x] 2026-03-30 — os dividendos de uma ação devem mudar o rend. total, mas não o valor total. Apenas coloca o dividendo como parte do rendimento da ação, apenas total, sem mexer no diário.
+- [x] 2026-03-30 — vamos criar um sinal no cabeçalho com um i de informação ou algo do tipo pra quando o usuário ponterar o mouse, poder ver um tooltip com uma explicação. Isso vai ser padrão no sistema todo, o mesmo simbolo.
+- [x] 2026-03-30 — a barra de progresso do refresh foi refeita para processar todos os tickers em lote único com barra fake animada (0→85% desacelerando, pula para 100% ao receber resposta).
 - [x] 2026-03-30 — Ordenação da lista de ações em todos os campos (ticker, qtd, preço de compra, fechamento, preço atual, rend. dia, rend. total, valor total). Clique no header ordena asc/desc com indicador visual.
 - [x] 2026-03-30 — Preço de fechamento das ações buscando incorretamente do Yahoo Finance (campo chartPreviousClose retornava 2 pregões atrás). Corrigido para usar regularMarketPreviousClose.
 - [x] 2026-03-30 — O atualizar cotações não estava criando barra de progresso (fazia tudo de uma vez). Corrigido para processar um ticker por vez com barra de progresso incremental no RefreshModal.

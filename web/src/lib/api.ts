@@ -2,9 +2,15 @@ import { getSession } from "next-auth/react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"
 
+let _sessionPromise: Promise<string | undefined> | null = null
+
 async function getToken(): Promise<string | undefined> {
-  const session = await getSession()
-  return session?.idToken
+  if (!_sessionPromise) {
+    _sessionPromise = getSession()
+      .then(s => s?.idToken)
+      .finally(() => { _sessionPromise = null })
+  }
+  return _sessionPromise
 }
 
 async function request<T>(

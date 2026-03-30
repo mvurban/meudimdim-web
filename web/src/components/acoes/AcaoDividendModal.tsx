@@ -18,6 +18,8 @@ function fmt(value: number) {
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const PAGE_SIZE = 10
+
 export function AcaoDividendModal({ acaoId, ticker, dividends, onClose, onSave }: AcaoDividendModalProps) {
   const today = new Date()
   const [form, setForm] = useState<FormState>({
@@ -28,6 +30,11 @@ export function AcaoDividendModal({ acaoId, ticker, dividends, onClose, onSave }
     jcp: '',
     outros: '',
   })
+  const [page, setPage] = useState(1)
+
+  const totalPages = Math.max(1, Math.ceil(dividends.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paginated = dividends.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   const totalGeral = dividends.reduce((acc, d) => acc + d.dividendo + d.jcp + d.outros, 0)
 
@@ -47,12 +54,17 @@ export function AcaoDividendModal({ acaoId, ticker, dividends, onClose, onSave }
       jcp,
       outros,
     }
-    onSave([...dividends, newRecord])
+    const next = [newRecord, ...dividends]
+    onSave(next)
+    setPage(1)
     setForm(f => ({ ...f, dividendo: '', jcp: '', outros: '' }))
   }
 
   function removeRecord(id: string) {
-    onSave(dividends.filter(d => d.id !== id))
+    const next = dividends.filter(d => d.id !== id)
+    onSave(next)
+    const newTotalPages = Math.max(1, Math.ceil(next.length / PAGE_SIZE))
+    if (currentPage > newTotalPages) setPage(newTotalPages)
   }
 
   return (
@@ -62,7 +74,10 @@ export function AcaoDividendModal({ acaoId, ticker, dividends, onClose, onSave }
         style={{ background: 'rgba(0,0,0,0.6)' }}
         onClick={e => { if (e.target === e.currentTarget) onClose() }}
       >
-        <div className="card w-full max-w-2xl animate-fade-in" style={{ padding: '1.5rem' }}>
+        <div
+          className="card w-full max-w-2xl animate-fade-in"
+          style={{ padding: '1.5rem', maxHeight: 'calc(100vh - 48px)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}
+        >
           {/* Header */}
           <div className="flex items-start justify-between mb-5">
             <div>
@@ -106,7 +121,7 @@ export function AcaoDividendModal({ acaoId, ticker, dividends, onClose, onSave }
                     </td>
                   </tr>
                 )}
-                {dividends.map(d => {
+                {paginated.map(d => {
                   const rowTotal = d.dividendo + d.jcp + d.outros
                   const [y, m, day] = d.date.split('-')
                   return (
@@ -132,6 +147,25 @@ export function AcaoDividendModal({ acaoId, ticker, dividends, onClose, onSave }
               </tbody>
             </table>
           </div>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mb-3" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              <span>{dividends.length} registro{dividends.length !== 1 ? 's' : ''} — página {currentPage} de {totalPages}</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{ ...pageBtn, opacity: currentPage === 1 ? 0.4 : 1 }}
+                >‹</button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{ ...pageBtn, opacity: currentPage === totalPages ? 0.4 : 1 }}
+                >›</button>
+              </div>
+            </div>
+          )}
 
           {/* Add form */}
           <div
@@ -230,6 +264,16 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   outline: 'none',
   boxSizing: 'border-box',
+}
+
+const pageBtn: React.CSSProperties = {
+  padding: '2px 10px',
+  borderRadius: 6,
+  border: '1px solid var(--border)',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  cursor: 'pointer',
 }
 
 const trashBtn: React.CSSProperties = {
