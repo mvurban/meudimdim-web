@@ -37,6 +37,35 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 - [ ] fechamento ainda com valor errado. Veja na internet como se busca esse valor.
 - [ ] Ao abrir a lista de ações pela primeira vez, deixe o rendimento do dia como ordenado do maior pro menor.
 
+- [ ] Quando falhar a busca de uma ação no yahoo financy é possível sinalizar a ação e colocar um reload somente nela pro usuário fazer apenas
+ a atualização dela? Melhor, que tal se der algum erro a gente colocar no sininho e disponibilizar no sininho um refresh, neste caso, aí se o user clicar ali, a gente tenta atualizar, se conseguir o alerta fica verde. Hoje os alertas estão todos em branco, podemos mudar pra vermelhor ou amarelo, e quando concertar fica verde. O que acha desse mecanismo, não implemente vamos debater.
+
+Dúvidas que precisamos alinhar:
+
+  1. Quem dispara a notificação de falha?
+  Só o refresh manual (modal)? Ou também o auto-refresh silencioso? Se for os dois, o usuário pode acordar com um
+  sininho vermelho sem ter feito nada.
+
+  2. O que acontece com os tickers que já estão no sininho quando a tentativa de retry tem sucesso?
+  Remove automaticamente? Fica verde por X segundos e some? Fica verde indefinidamente até o próximo refresh?
+
+  3. E se o retry também falhar?
+  Mantém vermelho? Mostra contador de tentativas? Permite tentar de novo?
+
+  4. Granularidade da notificação:
+  Uma notificação por ticker que falhou? Ou uma notificação única "3 tickers falharam" com lista expandível?
+
+  5. O sininho hoje:
+  Como ele está implementado atualmente? É só visual ou já tem backend/persistência? Isso vai determinar o esforço de
+  implementação.
+
+  ---
+  O que você pensa sobre esses pontos?
+
+ 1- Isso mesmo, esse é o comportamento esperado. 2- Mantém no sininho, pela regra, por x horas, tira o reload e coloca
+ um V de ok. 3- Mantém o reload, sem contador, permite tentar denovo. 4- se for mais de 2 tickets cria lista expandível
+ 5- Eu ahco que já tem backend, dá uma olhada em ./../meudimdim-api
+
 
 ---
 

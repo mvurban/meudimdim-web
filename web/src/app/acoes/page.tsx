@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageLoader } from '@/components/ui/PageLoader'
-import { mockPrecos } from '@/lib/mock-store'
 import { upsertAggregatedProducts } from '@/lib/mock-store'
 import { api } from '@/lib/api'
 import type { Institution, AssetClass, StockDividend } from '@/types'
@@ -91,7 +90,6 @@ function setStoredLastRefresh(iso: string) {
   try { localStorage.setItem(LAST_REFRESH_KEY, iso) } catch { /* noop */ }
 }
 
-const FAKE_ERROR_RATE = 0.18
 
 function AcoesPageInner() {
   const searchParams = useSearchParams()
@@ -216,10 +214,9 @@ function AcoesPageInner() {
     setSaving(true)
     try {
       if (adding) {
-        const { precoFechamento, precoAtual } = mockPrecos(precoMedio)
         const newItem: AcaoItem = await api.post('/api/acoes', {
           ticker, institutionId: form.institutionId, assetClassId: form.assetClassId,
-          quantidade, precoMedio, precoFechamento, precoAtual,
+          quantidade, precoMedio, precoFechamento: precoMedio, precoAtual: precoMedio,
         })
         const newAcoes = [...items, newItem]
         setItems(newAcoes)
@@ -315,14 +312,19 @@ function AcoesPageInner() {
 
   async function runSilentRefresh(currentAcoes: AcaoItem[]) {
     setIsAutoRefreshing(true)
-    const updated = currentAcoes
-      .filter(() => Math.random() >= FAKE_ERROR_RATE)
-      .map(a => {
-        const { precoFechamento, precoAtual } = mockPrecos(a.precoFechamento || a.precoMedio)
-        return { id: a.id, precoFechamento, precoAtual }
+    try {
+      const { results: fetched } = await api.post<{
+        results: { id: string; ticker: string; precoFechamento: number; precoAtual: number }[]
+        failed: { id: string; ticker: string }[]
+      }>('/api/acoes/fetch-quotes', {
+        tickers: currentAcoes.map(a => ({ id: a.id, ticker: a.ticker })),
       })
-    await applyRefreshResults(currentAcoes, updated)
-    setIsAutoRefreshing(false)
+      await applyRefreshResults(currentAcoes, fetched)
+    } catch {
+      // falha silenciosa — não atualiza os preços
+    } finally {
+      setIsAutoRefreshing(false)
+    }
   }
 
   function handleSort(field: string) {

@@ -43,7 +43,9 @@
       "WebFetch(domain:ranaroussi.github.io)",
       "WebFetch(domain:financeapi.net)",
       "WebFetch(domain:yahooquery.dpguthrie.com)",
-      "WebFetch(domain:www.quantvps.com)"
+      "WebFetch(domain:www.quantvps.com)",
+      "Bash(grep -r \"theme\\\\|color\\\\|#ef4444\\\\|--text-muted\" /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src/lib --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src -path *api* -type f)"
     ]
   }
 }
