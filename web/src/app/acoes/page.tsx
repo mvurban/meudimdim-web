@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { createPortal } from 'react-dom'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { upsertAggregatedProducts } from '@/lib/mock-store'
@@ -94,6 +94,7 @@ function setStoredLastRefresh(iso: string) {
 
 function AcoesPageInner() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { addNotification } = useNotifications()
   const [items, setItems] = useState<AcaoItem[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -420,6 +421,18 @@ function AcoesPageInner() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+          {/* Botão importar */}
+          <button
+            onClick={() => router.push('/configuracoes/importar-acoes')}
+            style={{ ...btnStyle('var(--bg-elevated)'), display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Importar
+          </button>
           {/* Botão atualizar com timestamp abaixo */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <button

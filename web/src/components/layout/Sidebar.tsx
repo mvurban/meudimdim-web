@@ -31,6 +31,7 @@ const CONFIG_NAV = [
   { href: '/configuracoes/cotacoes',           icon: '◐', label: 'Cotações',          danger: false },
   { href: '/configuracoes/benchmark',          icon: '◈', label: 'Benchmark',         danger: false },
   { href: '/configuracoes/importar-produtos',  icon: '↑', label: 'Importar Produtos', danger: false },
+  { href: '/configuracoes/importar-acoes',    icon: '↑', label: 'Importar Ações',    danger: false },
   { href: '/configuracoes/excluir-conta',     icon: '⊗', label: 'Excluir conta',     danger: true  },
 ]
 

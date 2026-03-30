@@ -31,6 +31,10 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Em Andamento
 
+- [ ] Testar importação de Ações e Dividendos.
+
+- [ ] Impedir Instituições de serem removidas se existir produtos associados. Mesma coisa pra todas as tabelas auxiliares. O comportamento é: clica no ícone apagar, pergunta se confirma, se confirmar verifique se tem produtos e/ou ações/fiis associados, se sim, mostra alerta danger informando que não é possível pois tem produtos/ações associados.
+- [ ] 
 
 ---
 
@@ -149,6 +153,8 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 # FUTURO? - [+]
 
 - [+] Gerar favicon
+
+- [+] Implementar importação de dividendos pra produtos nos moldes de ações.
 
 - [+] Em ações criar um gráfico de evolução da ação apenas com dados do yahoo finance. (pensar depois como algum dado nosso da ação pode ser útil pra interferir no gráfico, como data ou qtd)
 
