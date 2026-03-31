@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { parseCsvDividendosAcoes, generateDividendosCsvTemplate } from '@/lib/csv-import-dividendos-acoes'
 import type { DividendosImportResult } from '@/lib/csv-import-dividendos-acoes'
 import { ModalPortal } from '@/components/ui/ModalPortal'
@@ -14,34 +14,11 @@ interface DividendosImportModalProps {
 
 type Screen = 'idle' | 'preview' | 'error' | 'importing' | 'done'
 
-const IMPORT_DURATION_MS = 900
-
 export function DividendosImportModal({ acoes, onCancel, onImport }: DividendosImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [screen, setScreen]     = useState<Screen>('idle')
-  const [errors, setErrors]     = useState<string[]>([])
-  const [result, setResult]     = useState<DividendosImportResult | null>(null)
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    if (screen !== 'importing' || !result) return
-
-    setProgress(0)
-    const steps = 40
-    const interval = IMPORT_DURATION_MS / steps
-    let current = 0
-
-    const id = setInterval(() => {
-      current += 1
-      setProgress(Math.min(Math.round((current / steps) * 100), 100))
-      if (current >= steps) {
-        clearInterval(id)
-        setScreen('done')
-      }
-    }, interval)
-
-    return () => clearInterval(id)
-  }, [screen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [screen, setScreen] = useState<Screen>('idle')
+  const [errors, setErrors] = useState<string[]>([])
+  const [result, setResult] = useState<DividendosImportResult | null>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -78,15 +55,17 @@ export function DividendosImportModal({ acoes, onCancel, onImport }: DividendosI
     if (!result) return
     setScreen('importing')
 
-    for (const div of result.dividends) {
-      await api.post('/api/stock-dividends', {
-        stockTickerId: div.acaoId,
-        date: div.date,
-        dividendo: div.dividendo,
-        jcp: div.jcp,
-        outros: div.outros,
-      })
-    }
+    await api.post('/api/stock-dividends/bulk', {
+      dividends: result.dividends.map(d => ({
+        stockTickerId: d.acaoId,
+        date: d.date,
+        dividendo: d.dividendo,
+        jcp: d.jcp,
+        outros: d.outros,
+      })),
+    })
+
+    setScreen('done')
   }
 
   // Agrupa por ticker para o preview
@@ -244,17 +223,12 @@ export function DividendosImportModal({ acoes, onCancel, onImport }: DividendosI
 
             {/* IMPORTING */}
             {screen === 'importing' && result && (
-              <div className="py-4 flex flex-col gap-4">
+              <div className="py-6 flex flex-col items-center gap-4 text-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
                 <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                   Importando {result.dividends.length} dividendo{result.dividends.length !== 1 ? 's' : ''}…
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                    <span>Progresso</span><span>{progress}%</span>
-                  </div>
-                  <div className="w-full rounded-full overflow-hidden" style={{ height: 6, background: 'var(--bg-elevated)' }}>
-                    <div className="h-full rounded-full" style={{ background: 'var(--brand)', width: `${progress}%`, transition: 'width 80ms linear' }} />
-                  </div>
                 </div>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   Registrando dividendos…

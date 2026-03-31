@@ -125,6 +125,8 @@ function AcoesPageInner() {
     setLastRefreshState(lr)
     setPageSizeState(getStoredPageSize())
 
+    const forceRefresh = searchParams.get('refresh') === '1'
+
     Promise.all([
       api.get<AcaoItem[]>('/api/acoes'),
       api.get<Institution[]>('/api/institutions'),
@@ -138,7 +140,7 @@ function AcoesPageInner() {
       setStockDividends(divs.map((d: any) => ({ ...d, acaoId: d.stockTickerId })))
       setLoading(false)
 
-      if (shouldAutoRefresh(lr) && acoes.length > 0) {
+      if ((forceRefresh || shouldAutoRefresh(lr)) && acoes.length > 0) {
         runSilentRefresh(acoes)
       }
     }).catch(() => setLoading(false))

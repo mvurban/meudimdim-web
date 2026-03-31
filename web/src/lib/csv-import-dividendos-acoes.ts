@@ -12,7 +12,7 @@ export interface DividendosImportResult {
 type ParseSuccess = { ok: true; result: DividendosImportResult }
 type ParseFailure = { ok: false; errors: string[] }
 
-const REQUIRED_COLS = ['ticker', 'data', 'dividendo'] as const
+// Ordem das colunas: ticker(0), data(1), dividendo(2), jcp(3), outros(4)
 
 function parseNum(val: string): number {
   return parseFloat(val.replace(',', '.')) || 0
@@ -59,18 +59,8 @@ export function parseCsvDividendosAcoes(
     return { ok: false, errors: ['O arquivo precisa ter ao menos uma linha de cabeçalho e uma linha de dados.'] }
   }
 
+  // Detecta separador pela primeira linha (cabeçalho) e pula ela
   const sep = detectSeparator(lines[0])
-  const headers = splitLine(lines[0], sep).map(h => h.toLowerCase().trim())
-
-  const missingCols = REQUIRED_COLS.filter(c => !headers.includes(c))
-  if (missingCols.length > 0) {
-    return { ok: false, errors: [`Colunas obrigatórias ausentes: ${missingCols.join(', ')}`] }
-  }
-
-  const col = (row: string[], name: string): string => {
-    const idx = headers.indexOf(name)
-    return idx >= 0 ? (row[idx] ?? '').trim() : ''
-  }
 
   const dividends: DividendosImportResult['dividends'] = []
   const errors: string[] = []
@@ -79,11 +69,12 @@ export function parseCsvDividendosAcoes(
     const lineNum = i + 1
     const row = splitLine(lines[i], sep)
 
-    const tickerRaw  = col(row, 'ticker').toUpperCase()
-    const dataRaw    = col(row, 'data')
-    const dividendo  = parseNum(col(row, 'dividendo'))
-    const jcp        = parseNum(col(row, 'jcp'))
-    const outros     = parseNum(col(row, 'outros'))
+    // Colunas por posição: ticker(0), data(1), dividendo(2), jcp(3), outros(4)
+    const tickerRaw  = (row[0] ?? '').trim().toUpperCase()
+    const dataRaw    = (row[1] ?? '').trim()
+    const dividendo  = parseNum((row[2] ?? '').trim())
+    const jcp        = parseNum((row[3] ?? '').trim())
+    const outros     = parseNum((row[4] ?? '').trim())
 
     const lineErrors: string[] = []
 

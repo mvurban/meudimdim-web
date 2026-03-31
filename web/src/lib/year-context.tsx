@@ -8,8 +8,8 @@ export const CURRENT_MONTH = _now.getMonth() + 1
 
 function buildAvailableYears(): number[] {
   const years: number[] = []
-  for (let y = 2024; y <= CURRENT_YEAR; y++) years.push(y)
   if (CURRENT_MONTH === 12) years.push(CURRENT_YEAR + 1)
+  for (let y = CURRENT_YEAR; y >= 2024; y--) years.push(y)
   return years
 }
 export const AVAILABLE_YEARS = buildAvailableYears()

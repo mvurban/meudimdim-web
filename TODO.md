@@ -6,6 +6,7 @@
 - `- [x]` = tarefa concluída → vai para `# CONCLUÍDOS - [x]`
 - `- [+]` = proposta futura (pode ou não ser produzida) → vai para `# FUTURO? - [+]`
 - `- [-]` = proposta cancelada / não implementada → vai para `# NÃO IMPLEMENTADOS - [-]`
+- `- [?]` = item em dúvida / não fazer nada - ignorar
 
 ## Fluxo principal
 
@@ -31,10 +32,6 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Em Andamento
 
-- [ ] Testar importação de Ações e Dividendos.
-
-- [ ] Impedir Instituições de serem removidas se existir produtos associados. Mesma coisa pra todas as tabelas auxiliares. O comportamento é: clica no ícone apagar, pergunta se confirma, se confirmar verifique se tem produtos e/ou ações/fiis associados, se sim, mostra alerta danger informando que não é possível pois tem produtos/ações associados.
-- [ ] 
 
 ---
 
@@ -43,6 +40,9 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 ## Dashboard
 
 ## Produtos
+
+- [?] Pensar em como ficarão os anos e meses ao iniciar o sistema ou quando fizer uma importação. Como fica se tiver coisas em 2002 e depois só em 2025? Se tiver coisa em 1980?
+
 
 ---
 
@@ -59,6 +59,9 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 ---
 
 ## Dividendos
+
+- [?] Testar a área de dividendos - de ações, de produtos, dividendos em produtos agregados?
+
 
 ## Liquidez
 
@@ -96,6 +99,15 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 # CONCLUÍDOS - [x]
 
+- [x] 2026-03-30 17:45 — Na importação de dividendos e ações, inserção em bulk (createMany) em vez de um por um. Endpoints POST /api/acoes/bulk e POST /api/stock-dividends/bulk criados. Modais trocados para spinner indeterminado já que é chamada única.
+- [x] 2026-03-30 17:45 — Colocar o seletor de ano em ordem do mais recente pro mais antigo, mais recente primeiro.
+- [x] 2026-03-30 17:45 — Descrição no popup tá assim: açãoões corrigir.
+- [x] 2026-03-30 17:30 — Quando finalizar a importação de ações, em background atualizar as cotações das ações no yahoo finance.
+- [x] 2026-03-30 17:30 — Ao finalizar a importação está caindo na tela de ações, mas só com 3 ou 4 ações, preciso dar um refresh pra que todas as ações sejam carregadas.
+- [x] 2026-03-30 17:30 — Importação de ações está gerando mais de um registro dentro de produtos com o mesmo nome "Ações Clear".
+- [x] 2026-03-30 17:30 — A importação de dividendos deve gerar vários registros por ticker se encontrar várias entradas.
+- [x] 2026-03-30 17:30 — Nas importações, o que importa é a ordem vir correta, o cabeçalho pode ser ignorado. Hoje dá erro se o cabeçalho não corresponder ao esperado.
+- [x] 2026-03-30 17:30 — Impedir Instituições de serem removidas se existir produtos associados. Mesma coisa pra todas as tabelas auxiliares. O comportamento é: clica no ícone apagar, pergunta se confirma, se confirmar verifique se tem produtos e/ou ações/fiis associados, se sim, mostra alerta danger informando que não é possível pois tem produtos/ações associados.
 - [x] 2026-03-30 15:30 — Salvar cotações das ações no banco em lote: substituído N queries individuais por uma única query SQL com CASE WHEN, reduzindo o round-trip ao banco para 1 independente da quantidade de tickers.
 - [x] 2026-03-30 15:30 — Ao abrir a lista de ações pela primeira vez, ordenar por rendimento do dia do maior para o menor (sort padrão).
 - [x] 2026-03-30 — Retry de ticker com falha no sininho agora salva os preços no banco (PUT /api/acoes/refresh) e marca a notificação como resolvida (verde com ✓).
@@ -213,13 +225,13 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
   get<T>(key: RefKey): T[] | null {
   if (mem.has(key)) return mem.get(key) as T[]
   try {
-  const raw = localStorage.getItem(LS_PREFIX + key)
+  const raw = localStorage.getItem(LS*PREFIX + key)
   if (raw) {
   const data = JSON.parse(raw) as T[]
   mem.set(key, data)
   return data
   }
-  } catch { /_ noop _/ }
+  } catch { /* noop \_/ }
   return null
   },
 
@@ -233,8 +245,7 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
       try { localStorage.removeItem(LS_PREFIX + key) } catch { /* noop */ }
       },
 
-  }
-  2.  Novo: helper getRef<T> (dentro do próprio ref-cache.ts)
+  } 2. Novo: helper getRef<T> (dentro do próprio ref-cache.ts)
 
   Evita repetição nos Promise.all das páginas:
 
@@ -262,15 +273,13 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
   getRef<Institution>('institutions', '/api/institutions'),
   getRef<Region>('regions', '/api/regions'),
   getRef<LiquidityOption>('liquidity', '/api/liquidity'),
-  api.get<Product[]>('/api/products'), // produtos: sem cache (dinâmico)
-  4.  web/src/app/acoes/page.tsx
+  api.get<Product[]>('/api/products'), // produtos: sem cache (dinâmico) 4. web/src/app/acoes/page.tsx
 
   Substituir as duas chamadas de ref no Promise.all:
 
   // institutions e assetclasses via getRef; acoes e stock-dividends sem cache:
   getRef<Institution>('institutions', '/api/institutions'),
-  getRef<AssetClass>('assetclasses', '/api/assetclasses'),
-  5.  Páginas de Configuração (5 arquivos)
+  getRef<AssetClass>('assetclasses', '/api/assetclasses'), 5. Páginas de Configuração (5 arquivos)
 
   Após cada mutação (POST, PUT, DELETE), adicionar refCache.invalidate(key):
 

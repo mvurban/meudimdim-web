@@ -14,6 +14,7 @@ export interface AcoesImportResult {
 type ParseSuccess = { ok: true; result: AcoesImportResult }
 type ParseFailure = { ok: false; errors: string[] }
 
+// Ordem das colunas: ticker(0), instituicao(1), tipo_acao(2), quantidade(3), preco_medio(4)
 const REQUIRED_COLS = ['ticker', 'instituicao', 'tipo_acao', 'quantidade', 'preco_medio'] as const
 
 function parseNum(val: string): number {
@@ -58,18 +59,8 @@ export function parseCsvAcoes(
     return { ok: false, errors: ['O arquivo precisa ter ao menos uma linha de cabeçalho e uma linha de dados.'] }
   }
 
+  // Detecta separador pela primeira linha (cabeçalho) e pula ela
   const sep = detectSeparator(lines[0])
-  const headers = splitLine(lines[0], sep).map(h => h.toLowerCase().trim())
-
-  const missingCols = REQUIRED_COLS.filter(c => !headers.includes(c))
-  if (missingCols.length > 0) {
-    return { ok: false, errors: [`Colunas obrigatórias ausentes: ${missingCols.join(', ')}`] }
-  }
-
-  const col = (row: string[], name: string): string => {
-    const idx = headers.indexOf(name)
-    return idx >= 0 ? (row[idx] ?? '').trim() : ''
-  }
 
   const allInstitutions = [...existing.institutions]
   const newInstitutions: AcoesImportResult['newInstitutions'] = []
@@ -87,11 +78,12 @@ export function parseCsvAcoes(
     const lineNum = i + 1
     const row = splitLine(lines[i], sep)
 
-    const ticker   = col(row, 'ticker').toUpperCase().replace('.SA', '')
-    const instName = col(row, 'instituicao')
-    const tipoAcao = col(row, 'tipo_acao')
-    const qtdStr   = col(row, 'quantidade')
-    const precoStr = col(row, 'preco_medio')
+    // Colunas por posição: ticker(0), instituicao(1), tipo_acao(2), quantidade(3), preco_medio(4)
+    const ticker   = (row[0] ?? '').trim().toUpperCase().replace('.SA', '')
+    const instName = (row[1] ?? '').trim()
+    const tipoAcao = (row[2] ?? '').trim()
+    const qtdStr   = (row[3] ?? '').trim()
+    const precoStr = (row[4] ?? '').trim()
 
     const lineErrors: string[] = []
 

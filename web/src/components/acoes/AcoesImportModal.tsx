@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import type { AssetClass, Institution } from '@/types'
 import { parseCsvAcoes, generateAcoesCsvTemplate } from '@/lib/csv-import-acoes'
 import type { AcoesImportResult } from '@/lib/csv-import-acoes'
@@ -17,34 +17,11 @@ interface AcoesImportModalProps {
 
 type Screen = 'idle' | 'preview' | 'error' | 'importing' | 'done'
 
-const IMPORT_DURATION_MS = 900
-
 export function AcoesImportModal({ institutions, assetClasses, acoes, onCancel, onImport }: AcoesImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [screen, setScreen]     = useState<Screen>('idle')
-  const [errors, setErrors]     = useState<string[]>([])
-  const [result, setResult]     = useState<AcoesImportResult | null>(null)
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    if (screen !== 'importing' || !result) return
-
-    setProgress(0)
-    const steps = 40
-    const interval = IMPORT_DURATION_MS / steps
-    let current = 0
-
-    const id = setInterval(() => {
-      current += 1
-      setProgress(Math.min(Math.round((current / steps) * 100), 100))
-      if (current >= steps) {
-        clearInterval(id)
-        setScreen('done')
-      }
-    }, interval)
-
-    return () => clearInterval(id)
-  }, [screen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [screen, setScreen] = useState<Screen>('idle')
+  const [errors, setErrors] = useState<string[]>([])
+  const [result, setResult] = useState<AcoesImportResult | null>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -89,19 +66,18 @@ export function AcoesImportModal({ institutions, assetClasses, acoes, onCancel, 
       instIdMap.set(ni.id, created.id)
     }
 
-    for (const acao of result.acoes) {
-      const institutionId = instIdMap.get(acao.institutionId) ?? acao.institutionId
-      const assetClassId  = acao.assetClassId
-      await api.post('/api/acoes', {
-        ticker: acao.ticker,
-        institutionId,
-        assetClassId,
-        quantidade: acao.quantidade,
-        precoMedio: acao.precoMedio,
-        precoFechamento: acao.precoMedio,
-        precoAtual: acao.precoMedio,
-      })
-    }
+    // Envia todas as ações em uma única chamada
+    await api.post('/api/acoes/bulk', {
+      acoes: result.acoes.map(a => ({
+        ticker: a.ticker,
+        institutionId: instIdMap.get(a.institutionId) ?? a.institutionId,
+        assetClassId: a.assetClassId,
+        quantidade: a.quantidade,
+        precoMedio: a.precoMedio,
+      })),
+    })
+
+    setScreen('done')
   }
 
   const isLocked = screen === 'importing'
@@ -208,7 +184,7 @@ export function AcoesImportModal({ institutions, assetClasses, acoes, onCancel, 
                     Arquivo válido — pronto para importar
                   </div>
                   <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>{result.acoes.length}</strong> ação{result.acoes.length !== 1 ? 'ões' : ''} encontrada{result.acoes.length !== 1 ? 's' : ''}
+                    <strong style={{ color: 'var(--text-primary)' }}>{result.acoes.length}</strong> {result.acoes.length !== 1 ? 'ações encontradas' : 'ação encontrada'}
                   </div>
                   {result.newInstitutions.length > 0 && (
                     <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -251,20 +227,15 @@ export function AcoesImportModal({ institutions, assetClasses, acoes, onCancel, 
 
             {/* IMPORTING */}
             {screen === 'importing' && result && (
-              <div className="py-4 flex flex-col gap-4">
+              <div className="py-6 flex flex-col items-center gap-4 text-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
                 <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  Importando {result.acoes.length} ação{result.acoes.length !== 1 ? 'ões' : ''}…
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                    <span>Progresso</span><span>{progress}%</span>
-                  </div>
-                  <div className="w-full rounded-full overflow-hidden" style={{ height: 6, background: 'var(--bg-elevated)' }}>
-                    <div className="h-full rounded-full" style={{ background: 'var(--brand)', width: `${progress}%`, transition: 'width 80ms linear' }} />
-                  </div>
+                  Importando {result.acoes.length} {result.acoes.length !== 1 ? 'ações' : 'ação'}…
                 </div>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  Registrando ações, instituições e classes de ativo…
+                  Registrando ações e instituições…
                 </p>
               </div>
             )}

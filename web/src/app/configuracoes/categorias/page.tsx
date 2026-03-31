@@ -14,7 +14,7 @@ export default function CategoriasPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
-  const [removeModal, setRemoveModal] = useState<{ id: string; name: string } | null>(null)
+  const [removeModal, setRemoveModal] = useState<{ id: string; name: string; blocked?: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -57,9 +57,13 @@ export default function CategoriasPage() {
 
   async function confirmRemove() {
     if (!removeModal) return
-    await api.delete(`/api/categories/${removeModal.id}`)
-    setItems(prev => prev.filter(c => c.id !== removeModal.id))
-    setRemoveModal(null)
+    try {
+      await api.delete(`/api/categories/${removeModal.id}`)
+      setItems(prev => prev.filter(c => c.id !== removeModal.id))
+      setRemoveModal(null)
+    } catch {
+      setRemoveModal(prev => prev ? { ...prev, blocked: true } : null)
+    }
   }
 
   return (
@@ -169,13 +173,29 @@ export default function CategoriasPage() {
                 <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{removeModal.name}</p>
               </div>
             </div>
-            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              Essa ação é permanente e não pode ser desfeita.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setRemoveModal(null)} style={btnStyle('var(--bg-elevated)')}>Cancelar</button>
-              <button onClick={confirmRemove} style={btnStyle('#ef4444')}>Remover</button>
-            </div>
+            {removeModal.blocked ? (
+              <>
+                <div style={{ padding: '12px 14px', borderRadius: 8, marginBottom: 20, background: '#ef444415', border: '1px solid #ef444430' }}>
+                  <p style={{ margin: 0, fontSize: 13, color: '#f87171', lineHeight: 1.5 }}>
+                    Esta categoria está associada a produtos existentes.
+                    Remova ou reclassifique esses produtos antes de excluir esta categoria.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setRemoveModal(null)} style={btnStyle('#22c55e')}>Entendi</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  Essa ação é permanente e não pode ser desfeita.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => setRemoveModal(null)} style={btnStyle('var(--bg-elevated)')}>Cancelar</button>
+                  <button onClick={confirmRemove} style={btnStyle('#ef4444')}>Remover</button>
+                </div>
+              </>
+            )}
           </div>
         </div>,
         document.body

@@ -13,8 +13,10 @@ export interface ImportResult {
 type ParseSuccess = { ok: true; result: ImportResult }
 type ParseFailure = { ok: false; errors: string[] }
 
-const REQUIRED_COLS = ['nome', 'categoria', 'classe_ativo', 'instituicao', 'mes', 'ano', 'valor_brl'] as const
-const OPTIONAL_COLS = ['detalhes', 'cnpj', 'regiao', 'liquidez', 'aporte', 'retirada', 'ganhos', 'valor_usd', 'cotacao'] as const
+// Ordem das colunas obrigatórias (0-6) e opcionais (7-15):
+// 0=nome 1=categoria 2=classe_ativo 3=instituicao 4=mes 5=ano 6=valor_brl
+// 7=detalhes 8=cnpj 9=regiao 10=liquidez 11=aporte 12=retirada 13=ganhos 14=valor_usd 15=cotacao
+const TEMPLATE_HEADERS = ['nome', 'categoria', 'classe_ativo', 'instituicao', 'mes', 'ano', 'valor_brl', 'detalhes', 'cnpj', 'regiao', 'liquidez', 'aporte', 'retirada', 'ganhos', 'valor_usd', 'cotacao'] as const
 
 const DEFAULT_COLORS = ['#6366f1', '#f59e0b', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4']
 
@@ -62,18 +64,11 @@ export function parseCsvImport(
     return { ok: false, errors: ['O arquivo precisa ter ao menos uma linha de cabeçalho e uma linha de dados.'] }
   }
 
+  // Detecta separador pela primeira linha (cabeçalho) e pula ela
+  // Colunas por posição:
+  //   0=nome 1=categoria 2=classe_ativo 3=instituicao 4=mes 5=ano 6=valor_brl
+  //   7=detalhes 8=cnpj 9=regiao 10=liquidez 11=aporte 12=retirada 13=ganhos 14=valor_usd 15=cotacao
   const sep = detectSeparator(lines[0])
-  const headers = splitLine(lines[0], sep).map(h => h.toLowerCase().trim())
-
-  const missingCols = REQUIRED_COLS.filter(c => !headers.includes(c))
-  if (missingCols.length > 0) {
-    return { ok: false, errors: [`Colunas obrigatórias ausentes: ${missingCols.join(', ')}`] }
-  }
-
-  const col = (row: string[], name: string): string => {
-    const idx = headers.indexOf(name)
-    return idx >= 0 ? (row[idx] ?? '').trim() : ''
-  }
 
   // Working copies
   const allCategories   = [...existing.categories]
@@ -104,13 +99,13 @@ export function parseCsvImport(
     const lineNum = i + 1
     const row = splitLine(lines[i], sep)
 
-    const nome     = col(row, 'nome')
-    const catName  = col(row, 'categoria')
-    const acName   = col(row, 'classe_ativo')
-    const instName = col(row, 'instituicao')
-    const mesStr   = col(row, 'mes')
-    const anoStr   = col(row, 'ano')
-    const valorStr = col(row, 'valor_brl')
+    const nome     = (row[0]  ?? '').trim()
+    const catName  = (row[1]  ?? '').trim()
+    const acName   = (row[2]  ?? '').trim()
+    const instName = (row[3]  ?? '').trim()
+    const mesStr   = (row[4]  ?? '').trim()
+    const anoStr   = (row[5]  ?? '').trim()
+    const valorStr = (row[6]  ?? '').trim()
 
     const lineErrors: string[] = []
 
@@ -164,7 +159,7 @@ export function parseCsvImport(
     }
 
     // Resolve region — auto-register or fallback to default
-    const regionName = col(row, 'regiao')
+    const regionName = (row[9] ?? '').trim()
     let region: Region | undefined
     if (regionName) {
       region = allRegions.find(r => r.name.toLowerCase() === regionName.toLowerCase())
@@ -178,7 +173,7 @@ export function parseCsvImport(
     }
 
     // Resolve liquidity — auto-register or fallback to default
-    const liquidityName = col(row, 'liquidez')
+    const liquidityName = (row[10] ?? '').trim()
     let liquidity: LiquidityOption | undefined
     if (liquidityName) {
       liquidity = allLiquidityOptions.find(l => l.name.toLowerCase() === liquidityName.toLowerCase())
@@ -196,7 +191,7 @@ export function parseCsvImport(
     const product: Product = {
       id: productId,
       name: nome,
-      cnpj: col(row, 'cnpj') || undefined,
+      cnpj: (row[8] ?? '').trim() || undefined,
       categoryId: cat.id,
       assetClassId: ac.id,
       institutionId: inst.id,
@@ -205,15 +200,15 @@ export function parseCsvImport(
       currency: 'BRL',
       status: 'active',
       createdAt: now,
-      details: col(row, 'detalhes') || undefined,
+      details: (row[7] ?? '').trim() || undefined,
     }
 
     // Build ProductEntry
-    const valorUsd = parseNum(col(row, 'valor_usd'))
-    const cotacao  = parseNum(col(row, 'cotacao'))
-    const aporte   = parseNum(col(row, 'aporte'))
-    const retirada = parseNum(col(row, 'retirada'))
-    const ganhos   = parseNum(col(row, 'ganhos'))
+    const valorUsd = parseNum((row[14] ?? '').trim())
+    const cotacao  = parseNum((row[15] ?? '').trim())
+    const aporte   = parseNum((row[11] ?? '').trim())
+    const retirada = parseNum((row[12] ?? '').trim())
+    const ganhos   = parseNum((row[13] ?? '').trim())
 
     const entry: ProductEntry = {
       id: `e_imp_${Date.now()}_${i}`,
@@ -244,7 +239,7 @@ export function parseCsvImport(
 }
 
 export function generateCsvTemplate(): string {
-  const headers = [...REQUIRED_COLS, ...OPTIONAL_COLS].join(',')
+  const headers = [...TEMPLATE_HEADERS].join(',')
   const example = [
     'CDB XP 110% CDI',  // nome
     'Renda Fixa',        // categoria

@@ -31,7 +31,7 @@ export default function ImportarAcoesPage() {
 
   function handleImport() {
     setModal(null)
-    router.push('/acoes')
+    router.push('/acoes?refresh=1')
   }
 
   return (

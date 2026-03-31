@@ -261,11 +261,25 @@ export function setProductEntries(email: string, items: ProductEntry[]): void {
 // Aggregated products (Ações/FIIs auto-managed)
 // Lê ações da API e escreve produtos/entries/dividends na API.
 // ─────────────────────────────────────────────
+let _upsertInProgress = false
+
 export async function upsertAggregatedProducts(
   _email: string,
   month: number,
   year: number,
 ): Promise<{ upserted: number }> {
+  // Mutex: impede chamadas concorrentes que causariam produtos agregados duplicados
+  if (_upsertInProgress) return { upserted: 0 }
+  _upsertInProgress = true
+
+  try {
+    return await _doUpsert(month, year)
+  } finally {
+    _upsertInProgress = false
+  }
+}
+
+async function _doUpsert(month: number, year: number): Promise<{ upserted: number }> {
   // Busca dados da API
   let apiAcoes: AcaoItem[] = []
   let apiAcs: AssetClass[] = []
