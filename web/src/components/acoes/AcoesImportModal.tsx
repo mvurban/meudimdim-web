@@ -10,7 +10,7 @@ import { api } from '@/lib/api'
 interface AcoesImportModalProps {
   institutions: Institution[]
   assetClasses: AssetClass[] // já filtrados com isAcao=true
-  acoes: { ticker: string }[]
+  acoes: { ticker: string; institutionId: string }[]
   onCancel: () => void
   onImport: () => void
 }
@@ -44,7 +44,7 @@ export function AcoesImportModal({ institutions, assetClasses, acoes, onCancel, 
   }
 
   function downloadTemplate() {
-    const csv = generateAcoesCsvTemplate()
+    const csv = generateAcoesCsvTemplate(institutions.map(i => i.name))
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -138,7 +138,7 @@ export function AcoesImportModal({ institutions, assetClasses, acoes, onCancel, 
                       {[
                         { col: 'ticker',       desc: 'Código do ativo (ex: PETR4, XPML11)',     req: true  },
                         { col: 'instituicao',  desc: 'Corretora ou banco (ex: Clear Corretora)', req: true  },
-                        { col: 'tipo_acao',    desc: 'Classe de ativo (ex: Ações, FIIs)',         req: true  },
+                        { col: '(A)cao_(F)ii', desc: '(A)ção ou (F)ii',                           req: true  },
                         { col: 'quantidade',   desc: 'Quantidade de cotas/ações',                 req: true  },
                         { col: 'preco_medio',  desc: 'Preço médio de compra em R$',               req: true  },
                       ].map(({ col, desc, req }) => (

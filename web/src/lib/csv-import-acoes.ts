@@ -15,10 +15,18 @@ type ParseSuccess = { ok: true; result: AcoesImportResult }
 type ParseFailure = { ok: false; errors: string[] }
 
 // Ordem das colunas: ticker(0), instituicao(1), tipo_acao(2), quantidade(3), preco_medio(4)
-const REQUIRED_COLS = ['ticker', 'instituicao', 'tipo_acao', 'quantidade', 'preco_medio'] as const
+const REQUIRED_COLS = ['ticker', 'instituicao', '(A)cao_(F)ii', 'quantidade', 'preco_medio'] as const
 
 function parseNum(val: string): number {
   return parseFloat(val.replace(',', '.')) || 0
+}
+
+// Normaliza aliases: A → ações, F → fiis
+function normalizeTipoAcao(val: string): string {
+  const v = val.trim().toLowerCase()
+  if (v === 'a') return 'ações'
+  if (v === 'f') return 'fiis'
+  return v
 }
 
 function detectSeparator(line: string): ',' | ';' {
@@ -51,7 +59,7 @@ export function parseCsvAcoes(
   existing: {
     institutions: Institution[]
     assetClasses: AssetClass[] // já filtrados com isAcao=true
-    acoes: { ticker: string }[]
+    acoes: { ticker: string; institutionId: string }[]
   },
 ): ParseSuccess | ParseFailure {
   const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '')
@@ -67,8 +75,8 @@ export function parseCsvAcoes(
 
   const validClassNames = existing.assetClasses.map(a => a.name.toLowerCase())
 
-  // Tickers já cadastrados na carteira
-  const existingTickers = new Set(existing.acoes.map(a => a.ticker.toUpperCase().replace('.SA', '')))
+  // Combinações ticker+instituição já cadastradas
+  const existingKeys = new Set(existing.acoes.map(a => `${a.ticker.toUpperCase().replace('.SA', '')}|${a.institutionId}`))
 
   const acoes: AcoesImportResult['acoes'] = []
   const errors: string[] = []
@@ -109,11 +117,6 @@ export function parseCsvAcoes(
     }
     seenTickers.add(tickerKey)
 
-    if (existingTickers.has(ticker)) {
-      errors.push(`Linha ${lineNum}: ticker '${ticker}' já está cadastrado na sua carteira`)
-      continue
-    }
-
     // Resolve institution
     let inst = allInstitutions.find(ins => ins.name.toLowerCase() === instName.toLowerCase())
     if (!inst) {
@@ -122,10 +125,17 @@ export function parseCsvAcoes(
       newInstitutions.push(inst)
     }
 
-    // Resolve asset class — deve ser uma existente com isAcao=true
-    const ac = existing.assetClasses.find(a => a.name.toLowerCase() === tipoAcao.toLowerCase())
+    if (existingKeys.has(`${ticker}|${inst.id}`)) {
+      errors.push(`Linha ${lineNum}: ticker '${ticker}' já está cadastrado na instituição '${instName}'`)
+      continue
+    }
+
+    // Resolve asset class — aceita nome completo ou alias (A=Ações, F=FIIs)
+    const tipoNorm = normalizeTipoAcao(tipoAcao)
+    const ac = existing.assetClasses.find(a => a.name.toLowerCase() === tipoNorm)
     if (!ac) {
-      errors.push(`Linha ${lineNum}: tipo_acao '${tipoAcao}' inválido — valores aceitos: ${validClassNames.join(', ')}`)
+      const disponiveis = validClassNames.length > 0 ? validClassNames.join(', ') : '(nenhuma classe carregada)'
+      errors.push(`Linha ${lineNum}: tipo_acao '${tipoAcao}' inválido — use A (Ações) ou F (FIIs), ou o nome exato: ${disponiveis}`)
       continue
     }
 
@@ -138,12 +148,17 @@ export function parseCsvAcoes(
   return { ok: true, result: { acoes, newInstitutions } }
 }
 
-export function generateAcoesCsvTemplate(): string {
+export function generateAcoesCsvTemplate(institutionNames?: string[]): string {
   const headers = REQUIRED_COLS.join(',')
+
+  const inst1 = institutionNames?.[0] ?? 'Clear Corretora'
+  const inst2 = institutionNames?.[1] ?? 'XP Investimentos'
+
   const examples = [
-    'PETR4,Clear Corretora,Ações,100,28.50',
-    'ITUB4,XP Investimentos,Ações,200,22.00',
-    'XPML11,Clear Corretora,FIIs,50,98.00',
+    `PETR4,${inst1},A,100,28.50`,
+    `ITUB4,${inst2},A,200,22.00`,
+    `XPML11,${inst1},F,50,98.00`,
   ].join('\n')
+
   return `${headers}\n${examples}\n`
 }

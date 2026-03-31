@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageLoader } from '@/components/ui/PageLoader'
-import { upsertAggregatedProducts } from '@/lib/mock-store'
+import { upsertAggregatedProducts } from '@/lib/acoes-sync'
 import { api } from '@/lib/api'
 import type { Institution, AssetClass, StockDividend } from '@/types'
 import { AcaoDividendModal } from '@/components/acoes/AcaoDividendModal'
@@ -43,6 +43,14 @@ const REFRESH_THRESHOLD_MS = 15 * 60 * 1000
 
 function fmt(value: number) {
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function fmtCompact(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000_000) return `${fmt(value / 1_000_000_000)}B`
+  if (abs >= 1_000_000)     return `${fmt(value / 1_000_000)}M`
+  if (abs >= 10_000)        return `${fmt(value / 1_000)}k`
+  return fmt(value)
 }
 
 function parseBRL(value: string): number {
@@ -115,6 +123,7 @@ function AcoesPageInner() {
   const [refreshSummary, setRefreshSummary] = useState<{ tickers: number; products: number } | null>(null)
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [sortField, setSortField] = useState<string | null>('rendDia')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -208,6 +217,7 @@ function AcoesPageInner() {
     setAdding(false)
     setEditing(null)
     setForm(EMPTY)
+    setFormError(null)
   }
 
   async function save() {
@@ -216,6 +226,16 @@ function AcoesPageInner() {
     const precoMedio = parseBRL(form.precoMedio)
     if (!ticker || !form.institutionId || !form.assetClassId || quantidade <= 0 || precoMedio <= 0) return
 
+    if (adding) {
+      const duplicado = items.find(
+        a => a.ticker === ticker && a.institutionId === form.institutionId
+      )
+      if (duplicado) {
+        setFormError(`${ticker} já está cadastrado nesta instituição. Para alterar a quantidade, edite o registro existente.`)
+        return
+      }
+    }
+    setFormError(null)
     setSaving(true)
     try {
       if (adding) {
@@ -266,7 +286,7 @@ function AcoesPageInner() {
     if (newAcoes.length === 0) return
     try {
       const now = new Date()
-      await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
+      await upsertAggregatedProducts(now.getMonth() + 1, now.getFullYear())
     } catch (e) {
       console.error('Erro ao recalcular agregados:', e)
     }
@@ -302,7 +322,7 @@ function AcoesPageInner() {
     let upserted = 0
     try {
       const now = new Date()
-      const result = await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
+      const result = await upsertAggregatedProducts(now.getMonth() + 1, now.getFullYear())
       upserted = result.upserted
     } catch (e) {
       console.error('Erro ao criar produtos agregados:', e)
@@ -395,6 +415,7 @@ function AcoesPageInner() {
   const totalDividendos = filteredItems.reduce((s, a) => s + dividendTotalFor(a.id), 0)
   const rendimentoTotal = totalInvestido > 0 ? ((totalAtual + totalDividendos) / totalInvestido - 1) * 100 : 0
   const rendimentoDia = totalFechamento > 0 ? ((totalAtual / totalFechamento) - 1) * 100 : 0
+  const totalValorDia = filteredItems.reduce((s, a) => s + a.quantidade * ((a.precoAtual || a.precoMedio) - (a.precoFechamento || a.precoMedio)), 0)
   const hasConsolidado = filteredItems.length > 0
 
   if (loading) return <PageLoader />
@@ -493,7 +514,7 @@ function AcoesPageInner() {
         </svg>
         <select value={institutionFilter} onChange={e => { setInstitutionFilter(e.target.value); setCurrentPage(1) }} style={filterSelectStyle}>
           <option value="">Todas instituições</option>
-          {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+          {institutions.filter(i => items.some(a => a.institutionId === i.id)).map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
         <select value={assetClassFilter} onChange={e => { setAssetClassFilter(e.target.value); setCurrentPage(1) }} style={filterSelectStyle}>
           <option value="">Todos tipos</option>
@@ -587,6 +608,11 @@ function AcoesPageInner() {
               <button onClick={cancel} style={btnStyle('var(--bg-elevated)')}>Cancelar</button>
             </div>
           </div>
+          {formError && (
+            <p style={{ margin: '12px 0 0', fontSize: 13, color: '#ef4444' }}>
+              {formError}
+            </p>
+          )}
         </div>
       )}
 
@@ -619,26 +645,26 @@ function AcoesPageInner() {
       <div style={cardStyle}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+            <tr style={{ borderBottom: '2px solid #555' }}>
               <Th sortKey="ticker" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Ação</Th>
               <Th align="right" sortKey="quantidade" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Qtd</Th>
               <Th align="right" sortKey="precoMedio" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
-                Preço de Compra<InfoTooltip text="Preço médio de compra por unidade." />
+                Compra<InfoTooltip text="Preço médio de compra por unidade." />
               </Th>
               <Th align="right" sortKey="precoFechamento" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
                 Fechamento<InfoTooltip text="Preço de fechamento do pregão anterior." />
               </Th>
               <Th align="right" sortKey="precoAtual" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
-                Preço Atual<InfoTooltip text="Último preço disponível via Yahoo Finance." />
+                Atual<InfoTooltip text="Último preço disponível via Yahoo Finance." />
               </Th>
               <Th align="right" sortKey="rendDia" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
-                Rend. Dia<InfoTooltip text="Variação do preço atual em relação ao fechamento do pregão anterior." />
+                Rend. Hoje<InfoTooltip text="Variação do preço atual em relação ao fechamento do pregão anterior." />
               </Th>
               <Th align="right" sortKey="rendTotal" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
                 Rend. Total<InfoTooltip text="Variação total incluindo dividendos recebidos, em relação ao preço médio de compra." />
               </Th>
               <Th align="right" sortKey="valorTotal" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
-                Valor Total<InfoTooltip text="Quantidade × preço atual. Não inclui dividendos." />
+                Total<InfoTooltip text="Quantidade × preço atual. Não inclui dividendos." />
               </Th>
               <Th align="right">Ações</Th>
             </tr>
@@ -659,7 +685,7 @@ function AcoesPageInner() {
               </tr>
             )}
             {hasConsolidado && (
-              <tr style={{ borderBottom: '2px solid var(--border)', background: 'rgba(255,255,255,0.03)' }}>
+              <tr style={{ borderTop: '2px solid #555', borderBottom: '2px solid #555' }}>
                 <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-muted)', fontSize: 12 }}>
                   Consolidado
                 </td>
@@ -667,22 +693,22 @@ function AcoesPageInner() {
                   {filteredItems.reduce((s, a) => s + a.quantidade, 0).toLocaleString('pt-BR')}
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>
-                  R$ {fmt(totalInvestido)}
-                </td>
-                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  R$ {fmt(totalFechamento)}
+                  <span title={`R$ ${fmt(totalInvestido)}`}>R$ {fmtCompact(totalInvestido)}</span>
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>
-                  R$ {fmt(totalAtual)}
+                  <span title={`R$ ${fmt(totalFechamento)}`}>R$ {fmtCompact(totalFechamento)}</span>
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>
+                  <span title={`R$ ${fmt(totalAtual)}`}>R$ {fmtCompact(totalAtual)}</span>
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right' }}>
-                  <RendCell value={rendimentoDia} hasData={totalFechamento > 0} />
+                  <RendCell value={rendimentoDia} hasData={totalFechamento > 0} valorBrl={totalValorDia} />
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right' }}>
                   <RendCell value={rendimentoTotal} hasData={totalInvestido > 0} />
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700 }}>
-                  R$ {fmt(totalAtual)}
+                  <span title={`R$ ${fmt(totalAtual)}`}>R$ {fmtCompact(totalAtual)}</span>
                 </td>
                 <td style={tdStyle} />
               </tr>
@@ -695,6 +721,7 @@ function AcoesPageInner() {
               const totalInvestidoItem = item.quantidade * item.precoMedio
               const dividendos = dividendTotalFor(item.id)
               const rendDia = precoFech > 0 ? ((precoAtual / precoFech) - 1) * 100 : 0
+              const valorDia = item.quantidade * (precoAtual - precoFech)
               const rendTotal = totalInvestidoItem > 0 ? ((valorTotal + dividendos) / totalInvestidoItem - 1) * 100 : 0
 
               return (
@@ -746,13 +773,13 @@ function AcoesPageInner() {
                     {item.precoAtual > 0 ? `R$ ${fmt(item.precoAtual)}` : '—'}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
-                    <RendCell value={rendDia} hasData={item.precoFechamento > 0 && item.precoAtual > 0} />
+                    <RendCell value={rendDia} hasData={item.precoFechamento > 0 && item.precoAtual > 0} valorBrl={valorDia} />
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <RendCell value={rendTotal} hasData={item.precoAtual > 0} />
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>
-                    R$ {fmt(valorTotal)}
+                    <span title={`R$ ${fmt(valorTotal)}`}>R$ {fmtCompact(valorTotal)}</span>
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <button onClick={() => setDividendAcao(item.id)} style={actionBtn} title="Dividendos"><IconDividend /></button>
@@ -852,12 +879,17 @@ export default function AcoesPage() {
 
 // ── Sub-componentes ──────────────────────────
 
-function RendCell({ value, hasData }: { value: number; hasData: boolean }) {
+function RendCell({ value, hasData, valorBrl }: { value: number; hasData: boolean; valorBrl?: number }) {
   if (!hasData) return <span style={{ color: 'var(--text-muted)' }}>—</span>
   const pos = value >= 0
   return (
     <span style={{ color: pos ? '#22c55e' : '#ef4444', fontWeight: 600, fontSize: 13 }}>
       {pos ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
+      {valorBrl !== undefined && (
+        <span style={{ fontWeight: 400, marginLeft: 4, fontSize: 12 }}>
+          ({valorBrl >= 0 ? '+' : ''}R$ {fmtCompact(valorBrl)})
+        </span>
+      )}
     </span>
   )
 }

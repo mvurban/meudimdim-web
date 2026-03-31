@@ -12,7 +12,7 @@ export interface DividendosImportResult {
 type ParseSuccess = { ok: true; result: DividendosImportResult }
 type ParseFailure = { ok: false; errors: string[] }
 
-// Ordem das colunas: ticker(0), data(1), dividendo(2), jcp(3), outros(4)
+// Ordem das colunas: ticker(0), instituicao(1), data(2), dividendo(3), jcp(4), outros(5)
 
 function parseNum(val: string): number {
   return parseFloat(val.replace(',', '.')) || 0
@@ -52,14 +52,13 @@ function normalizeDate(raw: string): string | null {
 
 export function parseCsvDividendosAcoes(
   csvText: string,
-  existingAcoes: { id: string; ticker: string }[],
+  existingAcoes: { id: string; ticker: string; institutionName: string }[],
 ): ParseSuccess | ParseFailure {
   const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '')
   if (lines.length < 2) {
     return { ok: false, errors: ['O arquivo precisa ter ao menos uma linha de cabeçalho e uma linha de dados.'] }
   }
 
-  // Detecta separador pela primeira linha (cabeçalho) e pula ela
   const sep = detectSeparator(lines[0])
 
   const dividends: DividendosImportResult['dividends'] = []
@@ -69,16 +68,18 @@ export function parseCsvDividendosAcoes(
     const lineNum = i + 1
     const row = splitLine(lines[i], sep)
 
-    // Colunas por posição: ticker(0), data(1), dividendo(2), jcp(3), outros(4)
+    // Colunas por posição: ticker(0), instituicao(1), data(2), dividendo(3), jcp(4), outros(5)
     const tickerRaw  = (row[0] ?? '').trim().toUpperCase()
-    const dataRaw    = (row[1] ?? '').trim()
-    const dividendo  = parseNum((row[2] ?? '').trim())
-    const jcp        = parseNum((row[3] ?? '').trim())
-    const outros     = parseNum((row[4] ?? '').trim())
+    const instName   = (row[1] ?? '').trim()
+    const dataRaw    = (row[2] ?? '').trim()
+    const dividendo  = parseNum((row[3] ?? '').trim())
+    const jcp        = parseNum((row[4] ?? '').trim())
+    const outros     = parseNum((row[5] ?? '').trim())
 
     const lineErrors: string[] = []
 
     if (!tickerRaw) lineErrors.push(`campo 'ticker' vazio`)
+    if (!instName)  lineErrors.push(`campo 'instituicao' vazio`)
     if (!dataRaw)   lineErrors.push(`campo 'data' vazio`)
 
     if (dividendo <= 0 && jcp <= 0 && outros <= 0) {
@@ -93,13 +94,22 @@ export function parseCsvDividendosAcoes(
       continue
     }
 
-    // Resolve ticker (ignora .SA na comparação)
     const tickerClean = tickerRaw.replace('.SA', '')
+
+    // Resolve pelo ticker + instituição
     const acao = existingAcoes.find(a =>
-      a.ticker.toUpperCase().replace('.SA', '') === tickerClean
+      a.ticker.toUpperCase().replace('.SA', '') === tickerClean &&
+      a.institutionName.toLowerCase() === instName.toLowerCase()
     )
+
     if (!acao) {
-      errors.push(`Linha ${lineNum}: ticker '${tickerClean}' não encontrado na sua carteira`)
+      // Verifica se o ticker existe em outra instituição para dar mensagem mais clara
+      const tickerExists = existingAcoes.some(a => a.ticker.toUpperCase().replace('.SA', '') === tickerClean)
+      if (tickerExists) {
+        errors.push(`Linha ${lineNum}: ticker '${tickerClean}' não encontrado na instituição '${instName}'`)
+      } else {
+        errors.push(`Linha ${lineNum}: ticker '${tickerClean}' não encontrado na carteira`)
+      }
       continue
     }
 
@@ -112,12 +122,19 @@ export function parseCsvDividendosAcoes(
   return { ok: true, result: { dividends } }
 }
 
-export function generateDividendosCsvTemplate(): string {
-  const headers = ['ticker', 'data', 'dividendo', 'jcp', 'outros'].join(',')
+export function generateDividendosCsvTemplate(
+  institutionNames?: string[],
+): string {
+  const headers = ['ticker', 'instituicao', 'data', 'dividendo', 'jcp', 'outros'].join(',')
+
+  const inst1 = institutionNames?.[0] ?? 'Clear Corretora'
+  const inst2 = institutionNames?.[1] ?? 'XP Investimentos'
+
   const examples = [
-    'PETR4,2024-03-15,1.50,0.20,0',
-    'PETR4,2024-06-15,1.80,0,0',
-    'ITUB4,2024-03-15,0.80,0,0',
+    `PETR4,${inst1},2024-03-15,1.50,0.20,0`,
+    `PETR4,${inst2},2024-03-15,1.50,0.20,0`,
+    `ITUB4,${inst1},2024-03-15,0.80,0,0`,
   ].join('\n')
+
   return `${headers}\n${examples}\n`
 }

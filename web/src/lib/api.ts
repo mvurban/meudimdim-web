@@ -2,12 +2,21 @@ import { getSession } from "next-auth/react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"
 
+let _cachedToken: string | undefined = undefined
+let _tokenExpiry = 0
 let _sessionPromise: Promise<string | undefined> | null = null
+const TOKEN_TTL_MS = 5 * 60 * 1000 // 5 minutos
 
 async function getToken(): Promise<string | undefined> {
+  if (_cachedToken && Date.now() < _tokenExpiry) return _cachedToken
+
   if (!_sessionPromise) {
     _sessionPromise = getSession()
-      .then(s => s?.idToken)
+      .then(s => {
+        _cachedToken = s?.idToken
+        _tokenExpiry = Date.now() + TOKEN_TTL_MS
+        return _cachedToken
+      })
       .finally(() => { _sessionPromise = null })
   }
   return _sessionPromise

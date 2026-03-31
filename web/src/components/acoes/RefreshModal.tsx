@@ -30,22 +30,11 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
   const [results, setResults] = useState<RefreshResult[]>([])
   const [failed, setFailed] = useState<{ id: string; ticker: string }[]>([])
   const [done, setDone] = useState(false)
-  const [progress, setProgress] = useState(0)
   const running = useRef(false)
-  const fakeTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (running.current || acoes.length === 0) return
     running.current = true
-
-    // Barra fake: avança até 85% em ~8s, desacelerando conforme se aproxima
-    fakeTimer.current = setInterval(() => {
-      setProgress(p => {
-        if (p >= 85) { clearInterval(fakeTimer.current!); return p }
-        const step = Math.max(0.5, (85 - p) * 0.06)
-        return Math.min(85, p + step)
-      })
-    }, 200)
 
     async function run() {
       try {
@@ -63,15 +52,11 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
         setFailed(allFailed)
         onDone([], allFailed)
       } finally {
-        clearInterval(fakeTimer.current!)
-        setProgress(100)
         setDone(true)
       }
     }
 
     run()
-
-    return () => { clearInterval(fakeTimer.current!) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const readyToClose = done && summary != null
@@ -115,26 +100,15 @@ export function RefreshModal({ acoes, onDone, onClose, summary }: RefreshModalPr
           </div>
         </div>
 
-        {/* Barra de progresso — visível até readyToClose */}
+        {/* Spinner — visível enquanto processa */}
         {!readyToClose && (
-          <div style={{ padding: '8px 0 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {!done
-                  ? (progress === 0 ? 'Iniciando...' : `Buscando ${acoes.length} tickers...`)
-                  : 'Salvando dados...'}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6' }}>{Math.round(progress)}%</span>
-            </div>
-            <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                borderRadius: 3,
-                background: '#3b82f6',
-                width: `${progress}%`,
-                transition: 'width 0.3s ease',
-              }} />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '16px 0 24px' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Buscando cotações de {acoes.length} ticker{acoes.length !== 1 ? 's' : ''}…
+            </span>
           </div>
         )}
 

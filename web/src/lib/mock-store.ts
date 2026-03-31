@@ -280,7 +280,6 @@ export async function upsertAggregatedProducts(
 }
 
 async function _doUpsert(month: number, year: number): Promise<{ upserted: number }> {
-  // Busca dados da API
   let apiAcoes: AcaoItem[] = []
   let apiAcs: AssetClass[] = []
   let apiInsts: Institution[] = []
@@ -311,7 +310,7 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
   const apiDefaultRegion = apiRegions.find(r => r.isDefault) ?? apiRegions[0]
   const apiDefaultLiqId  = apiLiqs[0]?.id
 
-  // Group by (assetClassId, institutionId) — IDs reais da API
+  // Group by (assetClassId, institutionId)
   type GroupKey = string
   const groups = new Map<GroupKey, { acId: string; instId: string; totalBrl: number }>()
 
@@ -335,7 +334,6 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
 
     const valueBrl = Math.round(group.totalBrl * 100) / 100
 
-    // Find or create aggregated product na API
     let aggProduct = apiProducts.find(
       p => p.isAggregated && p.assetClassId === apiAc.id && p.institutionId === apiInst.id
     )
@@ -358,7 +356,6 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
       }
     }
 
-    // Upsert entry na API
     try {
       await api.put('/api/entries/upsert', {
         productId: aggProduct.id,
@@ -409,7 +406,7 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
     upserted++
   }
 
-  // Agregados sem ações correspondentes: remove a entry do mês na API
+  // Agregados sem ações correspondentes: remove a entry do mês
   for (const p of apiProducts) {
     if (!p.isAggregated) continue
     const stillActive = [...groups.values()].some(g => g.acId === p.assetClassId && g.instId === p.institutionId)

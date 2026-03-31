@@ -8,7 +8,7 @@ import { DividendosImportModal } from '@/components/acoes/DividendosImportModal'
 import { api } from '@/lib/api'
 import type { Institution, AssetClass } from '@/types'
 
-interface AcaoItem { id: string; ticker: string }
+interface AcaoItem { id: string; ticker: string; institutionId: string; institutionName?: string }
 
 export default function ImportarAcoesPage() {
   const router = useRouter()
@@ -18,15 +18,12 @@ export default function ImportarAcoesPage() {
   const [modal, setModal]                 = useState<'acoes' | 'dividendos' | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      api.get<Institution[]>('/api/institutions'),
-      api.get<AssetClass[]>('/api/assetclasses'),
-      api.get<AcaoItem[]>('/api/acoes'),
-    ]).then(([insts, acs, ac]) => {
-      setInstitutions(insts)
-      setAssetClasses(acs.filter(a => a.isAcao))
-      setAcoes(ac)
+    api.get<Institution[]>('/api/institutions').then(setInstitutions).catch(() => {})
+    api.get<AssetClass[]>('/api/assetclasses').then(acs => {
+      const filtered = acs.filter(a => a.isAcao)
+      setAssetClasses(filtered.length > 0 ? filtered : acs)
     }).catch(() => {})
+    api.get<AcaoItem[]>('/api/acoes').then(setAcoes).catch(() => {})
   }, [])
 
   function handleImport() {
@@ -70,7 +67,7 @@ export default function ImportarAcoesPage() {
             <div className="rounded-lg p-3 text-xs space-y-1" style={{ background: 'var(--bg-elevated)' }}>
               <div className="font-medium" style={{ color: 'var(--text-primary)' }}>Colunas obrigatórias:</div>
               <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono, monospace)' }}>
-                ticker, instituicao, tipo_acao, quantidade, preco_medio
+                ticker, instituicao, (A)cao_(F)ii, quantidade, preco_medio
               </div>
             </div>
             <button className="btn-brand" onClick={() => setModal('acoes')}>
@@ -102,7 +99,7 @@ export default function ImportarAcoesPage() {
             <div className="rounded-lg p-3 text-xs space-y-1" style={{ background: 'var(--bg-elevated)' }}>
               <div className="font-medium" style={{ color: 'var(--text-primary)' }}>Colunas obrigatórias:</div>
               <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono, monospace)' }}>
-                ticker, data, dividendo
+                ticker, instituicao, data, dividendo
               </div>
               <div className="font-medium mt-1" style={{ color: 'var(--text-primary)' }}>Opcionais:</div>
               <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono, monospace)' }}>
@@ -140,7 +137,11 @@ export default function ImportarAcoesPage() {
 
       {modal === 'dividendos' && (
         <DividendosImportModal
-          acoes={acoes}
+          acoes={acoes.map(a => ({
+            id: a.id,
+            ticker: a.ticker,
+            institutionName: institutions.find(i => i.id === a.institutionId)?.name ?? '',
+          }))}
           onCancel={() => setModal(null)}
           onImport={handleImport}
         />

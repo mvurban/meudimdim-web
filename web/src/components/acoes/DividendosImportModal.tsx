@@ -7,7 +7,7 @@ import { ModalPortal } from '@/components/ui/ModalPortal'
 import { api } from '@/lib/api'
 
 interface DividendosImportModalProps {
-  acoes: { id: string; ticker: string }[]
+  acoes: { id: string; ticker: string; institutionName: string }[]
   onCancel: () => void
   onImport: () => void
 }
@@ -41,7 +41,8 @@ export function DividendosImportModal({ acoes, onCancel, onImport }: DividendosI
   }
 
   function downloadTemplate() {
-    const csv = generateDividendosCsvTemplate()
+    const uniqueInstitutions = [...new Set(acoes.map(a => a.institutionName).filter(Boolean))]
+    const csv = generateDividendosCsvTemplate(uniqueInstitutions)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -132,11 +133,12 @@ export function DividendosImportModal({ acoes, onCancel, onImport }: DividendosI
                     </thead>
                     <tbody>
                       {[
-                        { col: 'ticker',    desc: 'Código do ativo (deve estar na carteira)',     req: true  },
-                        { col: 'data',      desc: 'Data do pagamento (yyyy-mm-dd ou dd/mm/yyyy)', req: true  },
-                        { col: 'dividendo', desc: 'Valor do dividendo em R$',                     req: true  },
-                        { col: 'jcp',       desc: 'Juros sobre Capital Próprio em R$',            req: false },
-                        { col: 'outros',    desc: 'Outros proventos em R$',                       req: false },
+                        { col: 'ticker',     desc: 'Código do ativo (deve estar na carteira)',          req: true  },
+                        { col: 'instituicao', desc: 'Corretora ou banco (ex: Clear Corretora)',         req: true  },
+                        { col: 'data',       desc: 'Data do pagamento (yyyy-mm-dd ou dd/mm/yyyy)',      req: true  },
+                        { col: 'dividendo',  desc: 'Valor do dividendo em R$',                          req: true  },
+                        { col: 'jcp',        desc: 'Juros sobre Capital Próprio em R$',                 req: false },
+                        { col: 'outros',     desc: 'Outros proventos em R$',                            req: false },
                       ].map(({ col, desc, req }) => (
                         <tr key={col} style={{ borderBottom: '1px solid var(--border)' }}>
                           <td className="py-1.5 pr-4 font-mono text-xs" style={{ color: 'var(--brand)' }}>{col}</td>

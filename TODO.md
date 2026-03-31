@@ -12,11 +12,11 @@
 
 1. Ler o todo.md completo
 2. Identificar os itens do tópico "Em Andamento"
-3. Executar item por item
+3. Executar item por item, um por vez
 4. Ao final de cada item, perguntar se pode prosseguir para o próximo
 5. À medida que conclui cada item, marcar com [x] no todo.md
 6. Ao finalizar todos os itens, perguntar se o usuário quer mover os concluídos para "# CONCLUÍDOS - [x]"
-7. Ao mover, replicar o texto exato precedido de data e hora: `- [x] 2026-03-22 14:30 — texto original da tarefa`
+7. Ao mover, replicar o texto exato precedido de data e hora e a área da tarefa: `- [x] 2026-03-22 14:30 — [Ações] - texto original da tarefa`
 8. Sempre inserir os recém-concluídos no topo da seção, empurrando os mais antigos para baixo.
 
 Regra especial — itens ponteiros:
@@ -24,7 +24,7 @@ Regra especial — itens ponteiros:
 Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "faça o primeiro item de Produtos"):
 
 - Executa o item apontado
-- Move o item apontado para Concluídos (com data/hora + texto exato)
+- Move o item apontado para Concluídos (com data/hora + área + texto exato)
 - Apaga o ponteiro do "Em Andamento" — ele não vai para Concluídos
 - O ponteiro é descartável após cumprir sua função
 
@@ -41,8 +41,9 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Produtos
 
+- [ ] Quando removo todas as ações de um produto agregado, este produto deverá ser removido também.
 - [?] Pensar em como ficarão os anos e meses ao iniciar o sistema ou quando fizer uma importação. Como fica se tiver coisas em 2002 e depois só em 2025? Se tiver coisa em 1980?
-
+- [ ] Testar a importação de produtos.
 
 ---
 
@@ -61,7 +62,6 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 ## Dividendos
 
 - [?] Testar a área de dividendos - de ações, de produtos, dividendos em produtos agregados?
-
 
 ## Liquidez
 
@@ -99,6 +99,14 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 # CONCLUÍDOS - [x]
 
+- [x] 2026-03-31 10:30 — [Ações] - No filtro de instituições, mostrar apenas as instituições em que haja conteúdo pra mostrar.
+- [x] 2026-03-31 10:30 — [Ações] - Se eu tento incluir uma ação com mesmo nome ele tenta gravar e dá erro oculto. Como deve funcionar: Se tentar cadastrar uma ação que já exista na mesma instituição, avisar que não é possível que é pra editar a quantidade de ações. Se for uma ação já existente mais em outra instituição que ainda não exista esta ação, aí sim permitir.
+- [x] 2026-03-31 10:30 — [Ações] - Ao atualizar cotações, mude a barra de progresso pelo loading padrão usado na importação, mude a estratégia de fake e faça o loading enquanto durar o processo.
+- [x] 2026-03-31 10:30 — [Ações] - O valor de fechamento no consolidado está com uma cor diferente dos demais, mude a cor para o padrão do restante dos demais itens do concolidado.
+- [x] 2026-03-31 10:30 — [Ações] - Destacar as linhas de títulos da ação, tanto o cabeçalho, quanto o consolidado, melhore o contraste.
+- [x] 2026-03-31 10:30 — [Ações] - A coluna Rend. dia, vai se chamar Rend. Hoje e terá o conteúdo atual seguido do valor correspondente. Ex.: seta 2.15% (R$ 1.250,00). No consolidado da coluna, faça a mesma coisa, inclua o valor somado.
+- [x] 2026-03-31 10:30 — [Ações] - Valores de cabeçalho maiores que 10.000 representar por K, M, B (mil, milhão, Bilhão) Ex.: 10.345 ficaria como 10k, 9.000 ficaria como 9.000 mesmo.
+- [x] 2026-03-31 10:30 — [Ações] - Abreviar o cabeçalho: Preço de compra vira Compra, preço atual, vira Atual, Valor Total vira Total
 - [x] 2026-03-30 17:45 — Na importação de dividendos e ações, inserção em bulk (createMany) em vez de um por um. Endpoints POST /api/acoes/bulk e POST /api/stock-dividends/bulk criados. Modais trocados para spinner indeterminado já que é chamada única.
 - [x] 2026-03-30 17:45 — Colocar o seletor de ano em ordem do mais recente pro mais antigo, mais recente primeiro.
 - [x] 2026-03-30 17:45 — Descrição no popup tá assim: açãoões corrigir.
