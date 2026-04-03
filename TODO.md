@@ -57,6 +57,8 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Ações
 
+- [ ] Ao entrar no sistema e fazer login, quando aceesso ações, diz que a ultima atualização foi a um instante, porém a tela com a lista de ações não está atualizada com as cotações mais recentes.
+
 ---
 
 ## Dividendos
@@ -179,6 +181,8 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 - [+] Em ações criar um gráfico de evolução da ação apenas com dados do yahoo finance. (pensar depois como algum dado nosso da ação pode ser útil pra interferir no gráfico, como data ou qtd)
 
 - [+] Criar área de produtos por liquidez.
+
+- [+] Criar conta família? vários usuários usando a mesma conta?
 
 - [+] Classe de Ativos — Implementar o conceito de ativo/inativo para classes de ativos e categorias. Uma classe ou categoria inativa não aparece nos formulários de cadastro/edição de produtos, mas continua associada aos produtos existentes sem quebrar histórico. Isso substitui a necessidade de remover registros em uso.
 
@@ -336,6 +340,141 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
   3.  Ir em Configurações → Instituições → criar nova → voltar para Ações → deve buscar da API (cache invalidado)
   4.  Recarregar a página (F5) → Produtos → não deve buscar institutions/regions/etc (localStorage hit)
   5.  Abrir aba anônima (limpa localStorage) → primeiro acesso busca tudo da API
+
+
+
+- [+] ❯ Vamos conversar, no futuro penso em criar um conceito de conta família. Seria um mecanismo em que vários usuários
+acessariam uma mesma conta, ou uma conta pai que desse acesso a outra conta filho a ter acesso aos dados. Pensa sobre
+isso e me dê alternativas.
+
+   ● Vou pensar nas alternativas e criar um documento para discutirmos.
+
+   ● Updated plan
+   ⎿  /plan to preview
+   ⎿  User rejected Claude's plan:
+      ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+      │ Conta Família — Discussão de Alternativas                                                                       │
+      │                                                                                                                 │
+      │ Contexto                                                                                                        │
+      │                                                                                                                 │
+      │ O sistema hoje é 100% por usuário (userId em todas as tabelas). Cada Google login é uma conta isolada.          │
+      │ A ideia é permitir que múltiplos usuários compartilhem dados financeiros — seja uma conta conjunta, seja uma    │
+      │ hierarquia pai/filho.                                                                                           │
+      │                                                                                                                 │
+      │ ---                                                                                                             │
+      │ Alternativas                                                                                                    │
+      │                                                                                                                 │
+      │ Alternativa 1 — Conta Compartilhada (membros numa carteira)                                                     │
+      │                                                                                                                 │
+      │ Um usuário cria uma "carteira" e convida outros emails (Google) para acessá-la.                                 │
+      │ O convidado entra com seu próprio login e escolhe qual carteira quer operar.                                    │
+      │                                                                                                                 │
+      │ Carteira "Família Silva"                                                                                        │
+      │   ├── Marcelo (dono)                                                                                            │
+      │   ├── Maria (editor)                                                                                            │
+      │   └── João (visualizador)                                                                                       │
+      │                                                                                                                 │
+      │ - Permissões: owner / editor / viewer                                                                           │
+      │ - O convidado pode ter sua própria carteira separada + acesso à carteira familiar                               │
+      │ - Impacto no backend: trocar userId por walletId em todas as tabelas, ou adicionar uma camada de resolução user │
+      │  → walletId ativo                                                                                               │
+      │ - Prós: modelo mais natural para casal/família gerindo finanças juntos                                          │
+      │ - Contras: maior refatoração — todas as queries precisam levar em conta o walletId ativo, não o userId          │
+      │                                                                                                                 │
+      │ ---                                                                                                             │
+      │ Alternativa 2 — Delegação de Acesso (acesso à conta de outro)                                                   │
+      │                                                                                                                 │
+      │ O usuário A concede ao usuário B acesso à sua conta. B entra com seu login e pode "impersonar" a conta de A.    │
+      │                                                                                                                 │
+      │ Marcelo concede acesso → Maria                                                                                  │
+      │ Maria loga → vê botão "Acessar conta de Marcelo"                                                                │
+      │                                                                                                                 │
+      │ - Sem novo conceito de carteira — a conta continua sendo do dono                                                │
+      │ - Permissões por delegação: leitura ou leitura+escrita                                                          │
+      │ - Impacto no backend: tabela AccountDelegate (ownerId, delegateId, role) + middleware que troca o userId        │
+      │ efetivo na request                                                                                              │
+      │ - Prós: menor refatoração — o conceito de userId por owner se mantém, só muda quem está "atrás do volante"      │
+      │ - Contras: sem separação de dados individuais; o delegado vê tudo do dono                                       │
+      │                                                                                                                 │
+      │ ---                                                                                                             │
+      │ Alternativa 3 — Conta Pai/Filho (hierarquia)                                                                    │
+      │                                                                                                                 │
+      │ Um usuário pai gerencia várias contas filho independentes. Cada filho tem seus próprios dados, o pai pode       │
+      │ visualizar/consolidar todos.                                                                                    │
+      │                                                                                                                 │
+      │ Marcelo (pai)                                                                                                   │
+      │   ├── vê consolidado de todos                                                                                   │
+      │   ├── Conta própria                                                                                             │
+      │   ├── Maria (filho) — conta independente                                                                        │
+      │   └── João (filho) — conta independente                                                                         │
+      │                                                                                                                 │
+      │ - Cada filho opera normalmente sua própria conta                                                                │
+      │ - O pai tem uma visão consolidada (dashboard agregado)                                                          │
+      │ - Impacto no backend: tabela FamilyMember (parentId, childId) + endpoints de consolidação cross-user            │
+      │ - Prós: preserva autonomia individual; ótimo para pais acompanhando filhos                                      │
+      │ - Contras: maior complexidade (dashboard consolidado é novo); filhos não veem dados uns dos outros              │
+      │                                                                                                                 │
+      │ ---                                                                                                             │
+      │ Alternativa 4 — Múltiplas Carteiras por Usuário (sem compartilhamento direto)                                   │
+      │                                                                                                                 │
+      │ Um usuário pode criar N carteiras (ex: "Pessoal", "Família", "Empresa").                                        │
+      │ Cada carteira é isolada. Compartilhamento futuro seria por carteira, não por conta.                             │
+      │                                                                                                                 │
+      │ Marcelo                                                                                                         │
+      │   ├── Carteira "Pessoal"                                                                                        │
+      │   └── Carteira "Família" ← poderia ser compartilhada no futuro                                                  │
+      │                                                                                                                 │
+      │ - Não resolve o compartilhamento agora, mas prepara a arquitetura para qualquer modelo futuro                   │
+      │ - Impacto: grande refatoração — todas as tabelas ganham walletId                                                │
+      │ - Prós: mais flexível a longo prazo                                                                             │
+      │ - Contras: o maior esforço de todos; sem valor imediato para o usuário                                          │
+      │                                                                                                                 │
+      │ ---                                                                                                             │
+      │ Comparativo                                                                                                     │
+      │                                                                                                                 │
+      │ ┌─────────────────────────────┬─────────────────────┬───────────────────┬─────────────────┬──────────────────── │
+      │ ──┐                                                                                                             │
+      │ │          Critério           │ Alt 1 Compartilhada │  Alt 2 Delegação  │ Alt 3 Pai/Filho │ Alt 4               │
+      │ Multi-carteira │                                                                                                │
+      │ ├─────────────────────────────┼─────────────────────┼───────────────────┼─────────────────┼──────────────────── │
+      │ ──┤                                                                                                             │
+      │ │ Esforço de refatoração      │ Alto                │ Médio             │ Médio           │ Muito alto          │
+      │   │                                                                                                             │
+      │ ├─────────────────────────────┼─────────────────────┼───────────────────┼─────────────────┼──────────────────── │
+      │ ──┤                                                                                                             │
+      │ │ Caso de uso casal           │ ✓ Ótimo             │ ✓ Bom             │ ✗ Não ideal     │ ✓ Com esforço       │
+      │   │                                                                                                             │
+      │ ├─────────────────────────────┼─────────────────────┼───────────────────┼─────────────────┼──────────────────── │
+      │ ──┤                                                                                                             │
+      │ │ Caso de uso pais/filhos     │ ✗ Não ideal         │ ✓ Razoável        │ ✓ Ótimo         │ ✓ Com esforço       │
+      │   │                                                                                                             │
+      │ ├─────────────────────────────┼─────────────────────┼───────────────────┼─────────────────┼──────────────────── │
+      │ ──┤                                                                                                             │
+      │ │ Dados individuais separados │ ✗ Tudo junto        │ ✗ Tudo junto      │ ✓ Separados     │ ✓ Separados         │
+      │   │                                                                                                             │
+      │ ├─────────────────────────────┼─────────────────────┼───────────────────┼─────────────────┼──────────────────── │
+      │ ──┤                                                                                                             │
+      │ │ Permissões granulares       │ ✓ owner/editor/view │ ✓ leitura/escrita │ ✗ Binário       │ ✓ Por carteira      │
+      │   │                                                                                                             │
+      │ ├─────────────────────────────┼─────────────────────┼───────────────────┼─────────────────┼──────────────────── │
+      │ ──┤                                                                                                             │
+      │ │ Menor risco de bugs         │ Médio               │ ✓ Menor           │ Médio           │ Alto                │
+      │   │                                                                                                             │
+      │ └─────────────────────────────┴─────────────────────┴───────────────────┴─────────────────┴──────────────────── │
+      │ ──┘                                                                                                             │
+      │                                                                                                                 │
+      │ ---                                                                                                             │
+      │ Recomendação para discussão                                                                                     │
+      │                                                                                                                 │
+      │ Para o perfil do sistema (gestão pessoal de patrimônio), Alt 2 (Delegação) tem o melhor custo/benefício no      │
+      │ curto prazo:                                                                                                    │
+      │ - Menor mudança arquitetural                                                                                    │
+      │ - Resolve o caso mais comum (cônjuge acompanhando)                                                              │
+      │ - Pode ser expandida para Alt 1 depois se necessário                                                            │
+      │                                                                                                                 │
+      │ Se o foco for acompanhamento de filhos adultos/dependentes, Alt 3 (Pai/Filho) é mais adequada.                  │
+      │                                                                                                                 │
+      │ As duas podem coexistir: começa com Delegação e adiciona visão consolidada depois.  
 
 ---
 

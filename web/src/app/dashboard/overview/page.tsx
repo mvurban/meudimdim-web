@@ -53,7 +53,7 @@ export default function OverviewPage() {
     return entries.filter(e => {
       if (e.month !== month || e.year !== year) return false
       const p = products.find(p => p.id === e.productId)
-      return p && p.status !== 'inactive'
+      return p && p.status !== 'closed'
     })
   }
 

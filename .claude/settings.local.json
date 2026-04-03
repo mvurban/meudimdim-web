@@ -47,7 +47,8 @@
       "Bash(grep -r \"theme\\\\|color\\\\|#ef4444\\\\|--text-muted\" /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src/lib --include=*.ts --include=*.tsx)",
       "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-web/web/src -path *api* -type f)",
       "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-api -type f -name *.ts -path */routes/*)",
-      "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-api -type f -path */routes* -name *.ts)"
+      "Bash(find /c/Projetos/mvurban/meudimdim/meudimdim-api -type f -path */routes* -name *.ts)",
+      "Bash(npm view:*)"
     ]
   }
 }

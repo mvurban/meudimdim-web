@@ -142,7 +142,7 @@ export default function ProdutosPage() {
     return selectedYear * 12 + selectedMonth < CURRENT_YEAR * 12 + CURRENT_MONTH
   }
 
-  function guardPastMonth(mode: 'create' | 'edit' | 'delete', action: () => void) {
+  function guardPastMonth(mode: 'create' | 'edit' | 'delete' | 'import', action: () => void) {
     if (isPastMonth()) {
       setPastMonthWarning({ mode, onConfirm: () => { setPastMonthWarning(null); action() } })
     } else {

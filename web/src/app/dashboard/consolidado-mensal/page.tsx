@@ -67,7 +67,7 @@ export default function ConsolidadoMensalPage() {
     return entries.filter(e => {
       if (e.month !== month || e.year !== year) return false
       const p = products.find(p => p.id === e.productId)
-      if (!p || p.status === 'inactive') return false
+      if (!p || p.status === 'closed') return false
       return instIds.includes(p.institutionId) && catIds.includes(p.categoryId)
     })
   }
@@ -96,7 +96,7 @@ export default function ConsolidadoMensalPage() {
         const es = entries.filter(e => {
           if (e.month !== month || e.year !== year) return false
           const p = products.find(p => p.id === e.productId)
-          return p && p.institutionId === id && p.status !== 'inactive'
+          return p && p.institutionId === id && p.status !== 'closed'
         })
         entry[id] = es.reduce((s, e) => s + e.valueFinal, 0)
       }
@@ -122,7 +122,7 @@ export default function ConsolidadoMensalPage() {
         const es = entries.filter(e => {
           if (e.month !== month || e.year !== year) return false
           const p = products.find(p => p.id === e.productId)
-          return p && classIds.includes(p.assetClassId) && p.status !== 'inactive'
+          return p && classIds.includes(p.assetClassId) && p.status !== 'closed'
         })
         entry[catId] = es.reduce((s, e) => s + e.valueFinal, 0)
       }
