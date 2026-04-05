@@ -32,18 +32,18 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Em Andamento
 
-
 ---
 
 ## Geral
+
+- Nas caixas de diálogo que possuem botões, permitir dar enter pro botão de execução.
 
 ## Dashboard
 
 ## Produtos
 
-- [ ] Quando removo todas as ações de um produto agregado, este produto deverá ser removido também.
 - [?] Pensar em como ficarão os anos e meses ao iniciar o sistema ou quando fizer uma importação. Como fica se tiver coisas em 2002 e depois só em 2025? Se tiver coisa em 1980?
-- [ ] Testar a importação de produtos.
+- [ ] Testar a importação de produtos
 
 ---
 
@@ -56,6 +56,9 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 ---
 
 ## Ações
+
+- [ ] No formulário de inclusão e edição de ações o placeholder está muito destacado, parece que já é o texto pra inclusao. Resolva isso.
+- [ ] Melhorar a experiencia do usuário quando ele tenta cadastrar uma mesma ação para a mesma instituição, sistema não deixa, mostra mensagem, mas fica confuso quando ele clica em editar.
 
 ---
 
@@ -99,6 +102,9 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 # CONCLUÍDOS - [x]
 
+- [x] 2026-04-04 21:29 — [Produtos] - Esse texto de alerta em editar/cadastrar produtos: "Este produto é gerenciado automaticamente pela área Ações/FIIs. Nome, categoria, subcategoria, instituição e valores totais são sobrescritos a cada atualização de cotações." deve se comportar diferente para meses anteriores ao mes atual, no qual valores não podem ser mais alterados nos produtos agregados.
+- [x] 2026-04-04 21:29 — [Produtos] - Substituir o termo subcategoria por classe de ativos, nos cadastrar e editar produtos.
+- [x] 2026-04-04 21:29 — [Produtos] - Quando removo todas as ações de um produto agregado, este produto deverá ser removido também, ou seja, não pode existir um produto agregado sem ações/fiis.
 - [x] 2026-03-31 10:30 — [Ações] - No filtro de instituições, mostrar apenas as instituições em que haja conteúdo pra mostrar.
 - [x] 2026-03-31 10:30 — [Ações] - Se eu tento incluir uma ação com mesmo nome ele tenta gravar e dá erro oculto. Como deve funcionar: Se tentar cadastrar uma ação que já exista na mesma instituição, avisar que não é possível que é pra editar a quantidade de ações. Se for uma ação já existente mais em outra instituição que ainda não exista esta ação, aí sim permitir.
 - [x] 2026-03-31 10:30 — [Ações] - Ao atualizar cotações, mude a barra de progresso pelo loading padrão usado na importação, mude a estratégia de fake e faça o loading enquanto durar o processo.

@@ -283,7 +283,7 @@ function AcoesPageInner() {
   }
 
   async function recalcAggregated(newAcoes: AcaoItem[]) {
-    if (newAcoes.length === 0) return
+    void newAcoes
     try {
       const now = new Date()
       await upsertAggregatedProducts(now.getMonth() + 1, now.getFullYear())

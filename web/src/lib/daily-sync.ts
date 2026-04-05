@@ -1,4 +1,5 @@
-import { upsertAggregatedProducts, setBenchmarks } from './mock-store'
+import { upsertAggregatedProducts } from './acoes-sync'
+import { setBenchmarks } from './mock-store'
 import { api } from './api'
 import type { BenchmarkEntry } from '@/types'
 
@@ -42,7 +43,7 @@ export async function runDailySyncIfNeeded(
           updates: results.map(r => ({ id: r.id, precoFechamento: r.precoFechamento, precoAtual: r.precoAtual })),
         })
         const now = new Date()
-        await upsertAggregatedProducts('', now.getMonth() + 1, now.getFullYear())
+        await upsertAggregatedProducts(now.getMonth() + 1, now.getFullYear())
       }
 
       if (failed.length > 0) {

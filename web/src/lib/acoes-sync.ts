@@ -51,8 +51,6 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
     return { upserted: 0 }
   }
 
-  if (apiAcoes.length === 0) return { upserted: 0 }
-
   // Normaliza stockTickerId → acaoId
   const stockDividends: StockDividend[] = apiStockDivs.map((d: any) => ({ ...d, acaoId: d.stockTickerId ?? d.acaoId }))
 
@@ -75,6 +73,8 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
   }
 
   let upserted = 0
+  // IDs de produtos já tratados nesta execução — sempre ativos, nunca encerrar no cleanup
+  const handledProductIds = new Set<string>()
 
   for (const [gKey, group] of groups) {
     const apiAc   = apiAcs.find(a => a.id === group.acId)
@@ -89,7 +89,7 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
 
     if (!aggProduct) {
       try {
-        aggProduct = await api.post<Product>('/api/products', {
+        const created = await api.post<Product>('/api/products', {
           name: `${apiAc.name} ${apiInst.name}`,
           categoryId: apiAc.categoryId,
           assetClassId: apiAc.id,
@@ -99,11 +99,15 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
           currency: 'BRL',
           isAggregated: true,
         })
+        // Garante os campos mesmo que a API não os retorne na resposta do POST
+        aggProduct = { ...created, assetClassId: apiAc.id, institutionId: apiInst.id, isAggregated: true }
         apiProducts.push(aggProduct)
       } catch {
         continue
       }
     }
+
+    handledProductIds.add(aggProduct.id)
 
     try {
       await api.put('/api/entries/upsert', {
@@ -116,6 +120,7 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
         valueOriginal: valueBrl,
         valueBrl,
         valueUsd: 0,
+        isClosed: false,
       })
     } catch {
       continue
@@ -155,18 +160,21 @@ async function _doUpsert(month: number, year: number): Promise<{ upserted: numbe
     upserted++
   }
 
-  // Agregados sem ações correspondentes: remove a entry do mês
+  // Agregados sem ações correspondentes: encerra a entry do mês atual
   for (const p of apiProducts) {
     if (!p.isAggregated) continue
+    if (handledProductIds.has(p.id)) continue  // foi tratado nesta execução — está ativo
     const stillActive = [...groups.values()].some(g => g.acId === p.assetClassId && g.instId === p.institutionId)
     if (stillActive) continue
     try {
       const entries = await api.get<ProductEntry[]>(`/api/entries?productId=${p.id}&month=${month}&year=${year}`)
-      await Promise.all(entries.map(e => api.delete(`/api/entries/${e.id}`)))
+      await Promise.all(entries.map(e => api.put(`/api/entries/${e.id}`, { isClosed: true })))
     } catch {
       // silencioso
     }
   }
+
+  if (apiAcoes.length === 0) return { upserted: 0 }
 
   return { upserted }
 }

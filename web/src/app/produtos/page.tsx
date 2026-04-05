@@ -18,7 +18,7 @@ import { DividendModal } from '@/components/produtos/DividendModal'
 import { DeleteProductModal } from '@/components/produtos/DeleteProductModal'
 import { ReactivateProductModal } from '@/components/produtos/ReactivateProductModal'
 import { PastMonthWarningModal } from '@/components/produtos/PastMonthWarningModal'
-import { upsertAggregatedProducts } from '@/lib/mock-store'
+import { upsertAggregatedProducts } from '@/lib/acoes-sync'
 import { api } from '@/lib/api'
 import { PageLoader } from '@/components/ui/PageLoader'
 import type { Product, ProductEntry, Category, AssetClass, Institution, Region, LiquidityOption, Dividend } from '@/types'
@@ -133,6 +133,9 @@ export default function ProdutosPage() {
       .catch(() => setDetailEntries([]))
   }, [detailProductId])
   const [showClosed, setShowClosed] = useState(false)
+  const [copyAggWarning, setCopyAggWarning] = useState(false)
+
+  useEffect(() => { setCopyAggWarning(false) }, [selectedMonth, selectedYear])
   const [pastMonthWarning, setPastMonthWarning] = useState<{
     mode: 'create' | 'edit' | 'delete' | 'import'
     onConfirm: () => void
@@ -310,21 +313,50 @@ export default function ProdutosPage() {
 
   async function handleCopyFromPrev() {
     try {
-      const created = await api.post<ProductEntry[]>('/api/entries/copy-month', {
-        targetMonth: selectedMonth,
-        targetYear: selectedYear,
-      })
-      setMonthEntries(created)
+      // Remove todas as entries do mês destino (ativas e encerradas) antes de copiar
+      await Promise.all(monthEntries.map(e => api.delete(`/api/entries/${e.id}`)))
 
-      // Recalcula agregados (Ações/FIIs) — ações ainda em mock, mas grava na API
-      if (email) {
-        await upsertAggregatedProducts(email, selectedMonth, selectedYear)
-        const [updatedProducts, updatedEntries] = await Promise.all([
-          api.get<Product[]>('/api/products'),
-          api.get<ProductEntry[]>(`/api/entries?month=${selectedMonth}&year=${selectedYear}`),
-        ])
-        setProducts(updatedProducts)
-        setMonthEntries(updatedEntries)
+      // Cria novas entries independentes a partir do mês anterior (apenas ativas)
+      const toCopy = prevMonthEntries.filter(e => !e.isClosed)
+      const aggregatedProductIds = new Set(
+        toCopy
+          .map(e => products.find(p => p.id === e.productId))
+          .filter(p => p?.isAggregated)
+          .map(p => p!.id)
+      )
+
+      await Promise.all(
+        toCopy.map(e =>
+          api.post<ProductEntry>('/api/entries', {
+            productId: e.productId,
+            month: selectedMonth,
+            year: selectedYear,
+            contribution: 0,
+            withdrawal: 0,
+            returnPct: 0,
+            valueOriginal: e.valueOriginal,
+            valueBrl: e.valueBrl,
+            valueUsd: e.valueUsd,
+          })
+        )
+      )
+
+      // Recalcula agregados (Ações/FIIs) e carrega tudo de uma vez no final
+      await upsertAggregatedProducts(selectedMonth, selectedYear)
+      const [updatedProducts, updatedEntries] = await Promise.all([
+        api.get<Product[]>('/api/products'),
+        api.get<ProductEntry[]>(`/api/entries?month=${selectedMonth}&year=${selectedYear}`),
+      ])
+      setProducts(updatedProducts)
+      setMonthEntries(updatedEntries)
+
+      // Verifica se algum produto agregado foi fechado pelo upsert (sem ações cadastradas)
+      if (aggregatedProductIds.size > 0) {
+        const lostAgg = [...aggregatedProductIds].some(id => {
+          const entry = updatedEntries.find(e => e.productId === id)
+          return !entry || entry.isClosed
+        })
+        if (lostAgg) setCopyAggWarning(true)
       }
     } catch {
       // silencioso
@@ -520,7 +552,7 @@ export default function ProdutosPage() {
             />
             Mostrar encerrados
           </label>
-          {prevMonthEntries.length > 0 && !categoryFilter && !institutionFilter && monthEntries.length > 0 && (
+          {prevMonthEntries.filter(e => !e.isClosed).length > 0 && monthEntries.filter(e => !e.isClosed).length > 0 && (
             <>
               <div style={{ flex: 1 }} />
               <button
@@ -539,7 +571,7 @@ export default function ProdutosPage() {
         </div>
 
         {/* Banner: mês vazio — copiar do mês anterior */}
-        {prevMonthEntries.length > 0 && !categoryFilter && !institutionFilter && monthEntries.length === 0 && (
+        {prevMonthEntries.filter(e => !e.isClosed).length > 0 && monthEntries.filter(e => !e.isClosed).length === 0 && (
           <div
             className="card flex items-center justify-between gap-4 px-5 py-4"
             style={{ borderLeft: '3px solid var(--brand)', background: 'var(--brand-subtle)' }}
@@ -551,11 +583,41 @@ export default function ProdutosPage() {
               </svg>
               <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                 Nenhum produto em {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][selectedMonth - 1]}/{selectedYear}.
-                {' '}Deseja copiar os <strong>{prevMonthEntries.length} produtos</strong> de {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][prevMonth - 1]}/{prevYear}?
+                {' '}Deseja copiar os <strong>{prevMonthEntries.filter(e => !e.isClosed).length} produtos</strong> de {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][prevMonth - 1]}/{prevYear}?
               </span>
             </div>
             <button className="btn-brand text-sm flex-shrink-0" onClick={() => setCopyModalOpen(true)}>
               Copiar do mês anterior
+            </button>
+          </div>
+        )}
+
+        {/* Aviso: produto agregado não copiado por falta de ações */}
+        {copyAggWarning && (
+          <div
+            className="card flex items-center justify-between gap-4 px-5 py-4"
+            style={{ borderLeft: '3px solid #f59e0b', background: '#f59e0b10' }}
+          >
+            <div className="flex items-center gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                Um ou mais <strong>produtos agregados</strong> não foram copiados pois não há ações cadastradas.
+                Adicione ações na área{' '}
+                <a href="/acoes" style={{ color: '#f59e0b', fontWeight: 600, textDecoration: 'underline' }}>Ações/FIIs</a>
+                {' '}para que apareçam automaticamente.
+              </span>
+            </div>
+            <button
+              onClick={() => setCopyAggWarning(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0, padding: 4 }}
+              title="Fechar"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
         )}
@@ -635,8 +697,8 @@ export default function ProdutosPage() {
           prevYear={prevYear}
           destMonth={selectedMonth}
           destYear={selectedYear}
-          prevCount={prevMonthEntries.length}
-          destCount={monthEntries.length}
+          prevCount={prevMonthEntries.filter(e => !e.isClosed).length}
+          destCount={monthEntries.filter(e => !e.isClosed).length}
           onCancel={() => setCopyModalOpen(false)}
           onConfirm={handleCopyFromPrev}
         />

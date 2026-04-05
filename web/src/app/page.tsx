@@ -1,6 +1,9 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
+
 const FEATURES = [
   { icon: '◈', text: 'Snapshots mensais de cada produto financeiro' },
   { icon: '◉', text: 'Cotações de ações em tempo real via Yahoo Finance' },
@@ -8,7 +11,10 @@ const FEATURES = [
   { icon: '◐', text: 'Conversão BRL ↔ USD com histórico de câmbio' },
 ]
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams()
+  const apiUnavailable = searchParams.get('error') === 'api_unavailable'
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── LEFT PANEL (always dark) ── */}
@@ -215,6 +221,26 @@ export default function LoginPage() {
             ))}
           </ul>
 
+          {/* API unavailable banner */}
+          {apiUnavailable && (
+            <div
+              style={{
+                marginBottom: 16,
+                padding: '12px 16px',
+                borderRadius: 10,
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.35)',
+                color: '#dc2626',
+                fontSize: 13.5,
+                lineHeight: 1.5,
+              }}
+            >
+              <strong>Serviço temporariamente indisponível.</strong>
+              <br />
+              Nossa API está fora do ar. Tente novamente mais tarde.
+            </div>
+          )}
+
           {/* Google button */}
           <button
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
@@ -264,5 +290,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   )
 }

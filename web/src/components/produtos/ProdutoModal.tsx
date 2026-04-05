@@ -91,6 +91,8 @@ export function ProdutoModal({
   }, [mode, product, entry, regions, liquidityOptions])
 
   const isAggregated = mode === 'edit' && (product?.isAggregated ?? false)
+  const now = new Date()
+  const isPastMonth = selectedYear < now.getFullYear() || (selectedYear === now.getFullYear() && selectedMonth < now.getMonth() + 1)
   const filteredClasses = assetClasses.filter(ac => ac.categoryId === form.categoryId)
   const selectedClassIsAcao = !isAggregated && (assetClasses.find(ac => ac.id === form.assetClassId)?.isAcao ?? false)
 
@@ -157,7 +159,10 @@ export function ProdutoModal({
               <p style={{ margin: 0, fontSize: 12, color: '#f59e0b', lineHeight: 1.5 }}>
                 Este produto é gerenciado automaticamente pela área{' '}
                 <a href="/acoes" style={{ color: '#f59e0b', fontWeight: 700, textDecoration: 'underline' }}>Ações/FIIs</a>.
-                {' '}Nome, categoria, subcategoria, instituição e valores totais são sobrescritos a cada atualização de cotações.
+                {' '}{isPastMonth
+                  ? 'Os valores deste mês são históricos e não serão mais alterados por atualizações de cotações.'
+                  : 'Nome, categoria, classe de ativos, instituição e valores totais são sobrescritos a cada atualização de cotações.'
+                }
               </p>
             </div>
           )}
@@ -192,9 +197,9 @@ export function ProdutoModal({
               </select>
             </div>
 
-            {/* Subcategoria */}
+            {/* Classe de Ativos */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Subcategoria</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Classe de Ativos</label>
               <select
                 className="input"
                 required
@@ -335,7 +340,7 @@ export function ProdutoModal({
                 step={0.01}
                 value={form.valueUsd}
                 onChange={e => set('valueUsd', parseFloat(e.target.value) || 0)}
-                disabled={isAggregated}
+                disabled={isAggregated && !isPastMonth}
               />
             </div>
 
@@ -349,7 +354,7 @@ export function ProdutoModal({
                 step={0.01}
                 value={form.valueBrl}
                 onChange={e => set('valueBrl', parseFloat(e.target.value) || 0)}
-                disabled={isAggregated}
+                disabled={isAggregated && !isPastMonth}
               />
             </div>
           </div>

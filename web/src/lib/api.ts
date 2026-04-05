@@ -1,4 +1,4 @@
-import { getSession } from "next-auth/react"
+import { getSession, signOut } from "next-auth/react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"
 
@@ -39,6 +39,13 @@ async function request<T>(
   })
 
   if (!res.ok) {
+    if (res.status === 401) {
+      // Sessão expirada — faz signOut para limpar o cookie e redireciona para login
+      if (typeof window !== 'undefined') {
+        signOut({ callbackUrl: '/' })
+      }
+      throw new Error('Unauthorized')
+    }
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error ?? `API error ${res.status}`)
   }
