@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import type { Category, AssetClass, Institution, Region, LiquidityOption } from '@/types'
 import { parseCsvImport, generateCsvTemplate } from '@/lib/csv-import'
 import type { ImportResult } from '@/lib/csv-import'
@@ -16,41 +16,15 @@ interface ImportModalProps {
   onImport: (result: ImportResult) => void
 }
 
-type Screen = 'idle' | 'preview' | 'error' | 'importing' | 'done'
-
-const IMPORT_DURATION_MS = 900
+type Screen = 'idle' | 'preview' | 'error'
 
 export function ImportModal({ categories, assetClasses, institutions, regions, liquidityOptions, onCancel, onImport }: ImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [screen, setScreen]   = useState<Screen>('idle')
-  const [errors, setErrors]       = useState<string[]>([])
-  const [skipped, setSkipped]     = useState(0)
-  const [blank, setBlank]         = useState(0)
-  const [result, setResult]       = useState<ImportResult | null>(null)
-  const [progress, setProgress] = useState(0)
-
-  // Progress bar — runs when importing
-  useEffect(() => {
-    if (screen !== 'importing' || !result) return
-
-    setProgress(0)
-    const steps = 40
-    const interval = IMPORT_DURATION_MS / steps
-    let current = 0
-
-    const id = setInterval(() => {
-      current += 1
-      const pct = Math.min(Math.round((current / steps) * 100), 100)
-      setProgress(pct)
-
-      if (current >= steps) {
-        clearInterval(id)
-        setScreen('done')
-      }
-    }, interval)
-
-    return () => clearInterval(id)
-  }, [screen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [screen, setScreen] = useState<Screen>('idle')
+  const [errors, setErrors] = useState<string[]>([])
+  const [skipped, setSkipped] = useState(0)
+  const [blank, setBlank]     = useState(0)
+  const [result, setResult]   = useState<ImportResult | null>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -87,14 +61,12 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
     URL.revokeObjectURL(url)
   }
 
-  const isLocked = screen === 'importing'
-
   return (
     <ModalPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
-      onClick={e => { if (e.target === e.currentTarget && !isLocked) onCancel() }}
+      onClick={e => { if (e.target === e.currentTarget) onCancel() }}
     >
       <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in" style={{ padding: 0 }}>
 
@@ -110,17 +82,15 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
               Importar Produtos via CSV
             </span>
           </div>
-          {!isLocked && (
-            <button
-              onClick={onCancel}
-              className="flex h-7 w-7 items-center justify-center rounded-md"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          )}
+          <button
+            onClick={onCancel}
+            className="flex h-7 w-7 items-center justify-center rounded-md"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
 
         <div className="px-6 py-5 space-y-5">
@@ -247,7 +217,7 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
 
               <div className="flex gap-3">
                 <button className="btn-ghost text-sm" onClick={onCancel}>Cancelar</button>
-                <button className="btn-brand text-sm" onClick={() => setScreen('importing')}>
+                <button className="btn-brand text-sm" onClick={() => result && onImport(result)}>
                   Iniciar importação
                 </button>
               </div>
@@ -295,62 +265,6 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
                 </button>
               </div>
             </>
-          )}
-
-          {/* ── IMPORTING ── */}
-          {screen === 'importing' && result && (
-            <div className="py-4 flex flex-col gap-4">
-              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                Importando {result.products.length} produto{result.products.length !== 1 ? 's' : ''}…
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                  <span>Progresso</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="w-full rounded-full overflow-hidden" style={{ height: 6, background: 'var(--bg-elevated)' }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      background: 'var(--brand)',
-                      width: `${progress}%`,
-                      transition: 'width 80ms linear',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Registrando produtos, entradas e tabelas auxiliares…
-              </p>
-            </div>
-          )}
-
-          {/* ── DONE ── */}
-          {screen === 'done' && (
-            <div className="py-4 flex flex-col items-center gap-5 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: 'var(--brand-subtle)' }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <div>
-                <div className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Importação concluída com sucesso</div>
-                <div className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                  {result && (
-                    <>
-                      <strong style={{ color: 'var(--text-primary)' }}>{result.products.length}</strong> produto{result.products.length !== 1 ? 's' : ''} importado{result.products.length !== 1 ? 's' : ''}.
-                      {skipped > 0 && <> · <strong>{skipped}</strong> linha{skipped !== 1 ? 's' : ''} ignorada{skipped !== 1 ? 's' : ''} (campos vazios).</>}
-                      {blank > 0 && <> · <strong style={{ color: '#f97316' }}>{blank}</strong><span style={{ color: '#f97316' }}> linha{blank !== 1 ? 's' : ''} em branco.</span></>}
-                    </>
-                  )}
-                </div>
-              </div>
-              <button className="btn-brand" onClick={() => result && onImport(result)}>
-                Concluído
-              </button>
-            </div>
           )}
 
         </div>

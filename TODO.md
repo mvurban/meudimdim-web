@@ -43,11 +43,13 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 ## Produtos
 
 - [?] Pensar em como ficarão os anos e meses ao iniciar o sistema ou quando fizer uma importação. Como fica se tiver coisas em 2002 e depois só em 2025? Se tiver coisa em 1980?
-- [ ] Testar a importação de produtos
+- [ ] No banner principal ganhos do mes, quando é negativo, ele buga a rent. média.
 
 ---
 
 ## Importar Produtos
+
+- [ ] A ultima importação não calculou as rentabilidades.
 
 ## Copiar do mês anterior
 

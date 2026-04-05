@@ -128,24 +128,26 @@ export default function ImportarProdutosPage() {
         }
       }))
 
-      // 5. Entradas (paralelo)
+      // 5. Entradas — sequencial em ordem cronológica para que a API encontre
+      //    corretamente o mês anterior ao calcular returnPct automaticamente
       step(`Salvando ${result.entries.length} entrada${result.entries.length !== 1 ? 's' : ''}…`)
-      await Promise.all(result.entries.map(async e => {
+      const sortedEntries = [...result.entries].sort((a, b) =>
+        a.year !== b.year ? a.year - b.year : a.month - b.month
+      )
+      for (const e of sortedEntries) {
         await api.post('/api/entries', {
           productId:     productMap[e.productId] ?? e.productId,
           month:         e.month,
           year:          e.year,
           contribution:  e.contribution,
           withdrawal:    e.withdrawal,
-          income:        e.income,
           valueOriginal: e.valueOriginal,
           valueBrl:      e.valueBrl,
           valueUsd:      e.valueUsd,
-          valueFinal:    e.valueFinal,
           exchangeRate:  e.exchangeRate,
           createdAt:     e.createdAt,
         })
-      }))
+      }
 
       if (mountedRef.current) {
         router.push('/produtos')
