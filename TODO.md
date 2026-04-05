@@ -49,7 +49,6 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ## Importar Produtos
 
-- [ ] A ultima importação não calculou as rentabilidades.
 
 ## Copiar do mês anterior
 

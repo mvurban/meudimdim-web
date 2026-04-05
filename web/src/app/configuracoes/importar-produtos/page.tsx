@@ -99,10 +99,12 @@ export default function ImportarProdutosPage() {
         }),
       ])
 
-      // 4. Produtos (paralelo) — reutiliza ID se nome + instituição já existirem
+      // 4. Produtos em bulk — reutiliza ID se nome + instituição já existirem
       step(`Salvando ${result.products.length} produto${result.products.length !== 1 ? 's' : ''}…`)
       const productMap: Record<string, string> = {}
-      await Promise.all(result.products.map(async p => {
+      const newProducts: typeof result.products = []
+
+      for (const p of result.products) {
         const resolvedInstId = instMap[p.institutionId] ?? p.institutionId
         const found = existingProducts.find(ep =>
           ep.name.toLowerCase() === p.name.toLowerCase() &&
@@ -111,31 +113,31 @@ export default function ImportarProdutosPage() {
         if (found) {
           productMap[p.id] = found.id
         } else {
-          const created = await api.post<Product>('/api/products', {
+          newProducts.push(p)
+        }
+      }
+
+      if (newProducts.length > 0) {
+        const created = await api.post<Product[]>('/api/products/bulk', {
+          products: newProducts.map(p => ({
             name:          p.name,
             cnpj:          p.cnpj,
-            categoryId:    catMap[p.categoryId]    ?? p.categoryId,
-            assetClassId:  acMap[p.assetClassId]   ?? p.assetClassId,
-            institutionId: resolvedInstId,
-            regionId:      regionMap[p.regionId]   ?? p.regionId,
-            liquidityId:   liqMap[p.liquidityId]   ?? p.liquidityId,
+            categoryId:    catMap[p.categoryId]             ?? p.categoryId,
+            assetClassId:  acMap[p.assetClassId]            ?? p.assetClassId,
+            institutionId: instMap[p.institutionId]         ?? p.institutionId,
+            regionId:      regionMap[p.regionId]            ?? p.regionId,
+            liquidityId:   liqMap[p.liquidityId]            ?? p.liquidityId,
             currency:      p.currency,
-            status:        p.status,
-            createdAt:     p.createdAt,
             details:       p.details,
-          })
-          productMap[p.id] = created.id
-        }
-      }))
+          })),
+        })
+        newProducts.forEach((p, i) => { productMap[p.id] = created[i].id })
+      }
 
-      // 5. Entradas — sequencial em ordem cronológica para que a API encontre
-      //    corretamente o mês anterior ao calcular returnPct automaticamente
+      // 5. Entradas em bulk — a API ordena cronologicamente e calcula returnPct
       step(`Salvando ${result.entries.length} entrada${result.entries.length !== 1 ? 's' : ''}…`)
-      const sortedEntries = [...result.entries].sort((a, b) =>
-        a.year !== b.year ? a.year - b.year : a.month - b.month
-      )
-      for (const e of sortedEntries) {
-        await api.post('/api/entries', {
+      await api.post('/api/entries/bulk', {
+        entries: result.entries.map(e => ({
           productId:     productMap[e.productId] ?? e.productId,
           month:         e.month,
           year:          e.year,
@@ -145,9 +147,8 @@ export default function ImportarProdutosPage() {
           valueBrl:      e.valueBrl,
           valueUsd:      e.valueUsd,
           exchangeRate:  e.exchangeRate,
-          createdAt:     e.createdAt,
-        })
-      }
+        })),
+      })
 
       if (mountedRef.current) {
         router.push('/produtos')

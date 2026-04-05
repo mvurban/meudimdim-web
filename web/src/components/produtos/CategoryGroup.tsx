@@ -36,12 +36,8 @@ export function CategoryGroup({
   const totalIncome       = entries.reduce((s, e) => s + e.income + (dividendByProduct[e.productId] ?? 0), 0)
   const totalContribution = entries.reduce((s, e) => s + e.contribution, 0)
   const totalWithdrawal   = entries.reduce((s, e) => s + e.withdrawal, 0)
-  const avgReturn         = entries.length
-    ? entries.reduce((s, e) => {
-        const divTotal = dividendByProduct[e.productId] ?? 0
-        const base = e.valueBrl > 0 ? divTotal / e.valueBrl * 100 : 0
-        return s + e.returnPct + base
-      }, 0) / entries.length
+  const avgReturn         = totalBrl > 0
+    ? entries.reduce((s, e) => s + e.returnPct * e.valueBrl, 0) / totalBrl
     : 0
 
   return (
