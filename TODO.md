@@ -47,6 +47,8 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 ---
 
+## Importar Produtos
+
 ## Copiar do mês anterior
 
 ---
@@ -102,6 +104,14 @@ Se um item em "Em Andamento" aponta para outro (ex: "faça o item dashboard", "f
 
 # CONCLUÍDOS - [x]
 
+- [x] 2026-04-05 10:30 — [Importar Produtos] - na importação se está importando um produto com o mesmo nome, na mesma instituição, considere que é o mesmo produto, mesmo id.
+- [x] 2026-04-05 10:30 — [Importar Produtos] - Importe os produtos todos de uma vez pro banco em vez de um por um, coloque um temporizador em vez de contador.
+- [x] 2026-04-05 10:00 — [Importar Produtos] - Perguntar quantas linhas de cabeçalho tem o arquivo.
+- [x] 2026-04-05 10:00 — [Importar Produtos] - na tela de Relacionar colunas, criar combo para o campo região. Deixe pré-selecionado brasil.
+- [x] 2026-04-05 10:00 — [Importar Produtos] - Manter os botões visíveis na tela de relacionar colunas.
+- [x] 2026-04-05 — [Importar Produtos] - Na tela de importar produtos onde aparecem os dois quadros, alinhar o botão do relacionar colunas na base do quadro pra que os dois botões dos quadros fiquem alinhados.
+- [x] 2026-04-05 — [Importar Produtos] - Na área de produtos tem importar csv, transforme o botão em importar produtos e deixe o comportamento igual ao do menu lateral.
+- [x] 2026-04-05 — [Importar Produtos] - Na importação por Colunas, criar uma coluna a mais na tela de relacionar colunas, após a coluna "Coluna do seu arquivo". A ideia aqui é fornecer ao usuário uma opção de preencher valores padrão em categoria, classe de ativo, instituição, mes e ano. Só vai pegar esses valores se a opção "não mapear" da coluna "Coluna do seu arquivo" estiver selecionada. Não deixe os dois serem selecionados ao mesmo tempo.
 - [x] 2026-04-04 21:29 — [Produtos] - Esse texto de alerta em editar/cadastrar produtos: "Este produto é gerenciado automaticamente pela área Ações/FIIs. Nome, categoria, subcategoria, instituição e valores totais são sobrescritos a cada atualização de cotações." deve se comportar diferente para meses anteriores ao mes atual, no qual valores não podem ser mais alterados nos produtos agregados.
 - [x] 2026-04-04 21:29 — [Produtos] - Substituir o termo subcategoria por classe de ativos, nos cadastrar e editar produtos.
 - [x] 2026-04-04 21:29 — [Produtos] - Quando removo todas as ações de um produto agregado, este produto deverá ser removido também, ou seja, não pode existir um produto agregado sem ações/fiis.

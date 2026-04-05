@@ -23,8 +23,10 @@ const IMPORT_DURATION_MS = 900
 export function ImportModal({ categories, assetClasses, institutions, regions, liquidityOptions, onCancel, onImport }: ImportModalProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [screen, setScreen]   = useState<Screen>('idle')
-  const [errors, setErrors]   = useState<string[]>([])
-  const [result, setResult]   = useState<ImportResult | null>(null)
+  const [errors, setErrors]       = useState<string[]>([])
+  const [skipped, setSkipped]     = useState(0)
+  const [blank, setBlank]         = useState(0)
+  const [result, setResult]       = useState<ImportResult | null>(null)
   const [progress, setProgress] = useState(0)
 
   // Progress bar — runs when importing
@@ -61,9 +63,13 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
       const parsed = parseCsvImport(text, { categories, assetClasses, institutions, regions, liquidityOptions })
       if (parsed.ok) {
         setResult(parsed.result)
+        setSkipped(parsed.result.skippedCount)
+        setBlank(parsed.result.blankCount)
         setScreen('preview')
       } else {
         setErrors(parsed.errors)
+        setSkipped(parsed.skippedCount)
+        setBlank(parsed.blankCount)
         setScreen('error')
       }
     }
@@ -200,8 +206,18 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
                   Arquivo válido — pronto para importar
                 </div>
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <strong style={{ color: 'var(--text-primary)' }}>{result.products.length}</strong> produto{result.products.length !== 1 ? 's' : ''} encontrado{result.products.length !== 1 ? 's' : ''}
+                  <strong style={{ color: 'var(--text-primary)' }}>{result.products.length}</strong> linha{result.products.length !== 1 ? 's' : ''} válida{result.products.length !== 1 ? 's' : ''} para importar
                 </div>
+                {skipped > 0 && (
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    · {skipped} linha{skipped !== 1 ? 's' : ''} ignorada{skipped !== 1 ? 's' : ''} (campos obrigatórios vazios)
+                  </div>
+                )}
+                {blank > 0 && (
+                  <div className="text-xs font-medium" style={{ color: '#f97316' }}>
+                    · {blank} linha{blank !== 1 ? 's' : ''} em branco encontrada{blank !== 1 ? 's' : ''} e ignorada{blank !== 1 ? 's' : ''}
+                  </div>
+                )}
                 {result.newCategories.length > 0 && (
                   <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     · {result.newCategories.length} categoria{result.newCategories.length !== 1 ? 's' : ''} nova{result.newCategories.length !== 1 ? 's' : ''}: {result.newCategories.map(c => c.name).join(', ')}
@@ -261,6 +277,17 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
                 ))}
               </div>
 
+              {skipped > 0 && (
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {skipped} linha{skipped !== 1 ? 's' : ''} ignorada{skipped !== 1 ? 's' : ''} por campos obrigatórios vazios (não contam como erro).
+                </div>
+              )}
+              {blank > 0 && (
+                <div className="text-xs font-medium" style={{ color: '#f97316' }}>
+                  {blank} linha{blank !== 1 ? 's' : ''} em branco encontrada{blank !== 1 ? 's' : ''} e ignorada{blank !== 1 ? 's' : ''}.
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button className="btn-ghost text-sm" onClick={onCancel}>Cancelar</button>
                 <button className="btn-brand text-sm" onClick={() => { setScreen('idle'); setErrors([]) }}>
@@ -311,7 +338,13 @@ export function ImportModal({ categories, assetClasses, institutions, regions, l
               <div>
                 <div className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Importação concluída com sucesso</div>
                 <div className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                  Os produtos já estão disponíveis na listagem.
+                  {result && (
+                    <>
+                      <strong style={{ color: 'var(--text-primary)' }}>{result.products.length}</strong> produto{result.products.length !== 1 ? 's' : ''} importado{result.products.length !== 1 ? 's' : ''}.
+                      {skipped > 0 && <> · <strong>{skipped}</strong> linha{skipped !== 1 ? 's' : ''} ignorada{skipped !== 1 ? 's' : ''} (campos vazios).</>}
+                      {blank > 0 && <> · <strong style={{ color: '#f97316' }}>{blank}</strong><span style={{ color: '#f97316' }}> linha{blank !== 1 ? 's' : ''} em branco.</span></>}
+                    </>
+                  )}
                 </div>
               </div>
               <button className="btn-brand" onClick={() => result && onImport(result)}>

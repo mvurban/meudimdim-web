@@ -8,10 +8,12 @@ export interface ImportResult {
   newInstitutions: Institution[]
   newRegions: Region[]
   newLiquidityOptions: LiquidityOption[]
+  skippedCount: number
+  blankCount: number
 }
 
 type ParseSuccess = { ok: true; result: ImportResult }
-type ParseFailure = { ok: false; errors: string[] }
+type ParseFailure = { ok: false; errors: string[]; skippedCount: number; blankCount: number }
 
 // Ordem das colunas obrigatórias (0-6) e opcionais (7-15):
 // 0=nome 1=categoria 2=classe_ativo 3=instituicao 4=mes 5=ano 6=valor_brl
@@ -21,7 +23,21 @@ const TEMPLATE_HEADERS = ['nome', 'categoria', 'classe_ativo', 'instituicao', 'm
 const DEFAULT_COLORS = ['#6366f1', '#f59e0b', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4']
 
 function parseNum(val: string): number {
-  return parseFloat(val.replace(',', '.')) || 0
+  // Remove símbolos de moeda, espaços e caracteres não-numéricos exceto separadores
+  let v = val.replace(/[R$\s]/g, '').replace(/\$/g, '')
+  // Detecta formato: se tiver vírgula como decimal (1.234,56) → remove pontos de milhar e troca vírgula
+  // Se tiver ponto como decimal (1,234.56) → remove vírgulas de milhar
+  if (/\d+\.\d{3},\d+/.test(v)) {
+    // Formato BR: 1.234,56
+    v = v.replace(/\./g, '').replace(',', '.')
+  } else if (/\d+,\d{3}\.?\d*/.test(v)) {
+    // Formato US: 1,234.56
+    v = v.replace(/,/g, '')
+  } else {
+    // Sem separador de milhar: apenas troca vírgula decimal por ponto
+    v = v.replace(',', '.')
+  }
+  return parseFloat(v) || 0
 }
 
 function detectSeparator(line: string): ',' | ';' {
@@ -59,16 +75,18 @@ export function parseCsvImport(
     liquidityOptions: LiquidityOption[]
   },
 ): ParseSuccess | ParseFailure {
-  const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '')
-  if (lines.length < 2) {
-    return { ok: false, errors: ['O arquivo precisa ter ao menos uma linha de cabeçalho e uma linha de dados.'] }
+  const allLines = csvText.split(/\r?\n/)
+  const headerIdx = allLines.findIndex(l => l.trim() !== '')
+  const dataLines = headerIdx >= 0 ? allLines.slice(headerIdx + 1) : []
+  if (headerIdx === -1 || dataLines.every(l => l.trim() === '')) {
+    return { ok: false, errors: ['O arquivo precisa ter ao menos uma linha de cabeçalho e uma linha de dados.'], skippedCount: 0, blankCount: 0 }
   }
 
-  // Detecta separador pela primeira linha (cabeçalho) e pula ela
+  // Detecta separador pela linha de cabeçalho
   // Colunas por posição:
   //   0=nome 1=categoria 2=classe_ativo 3=instituicao 4=mes 5=ano 6=valor_brl
   //   7=detalhes 8=cnpj 9=regiao 10=liquidez 11=aporte 12=retirada 13=ganhos 14=valor_usd 15=cotacao
-  const sep = detectSeparator(lines[0])
+  const sep = detectSeparator(allLines[headerIdx])
 
   // Working copies
   const allCategories   = [...existing.categories]
@@ -93,11 +111,21 @@ export function parseCsvImport(
   const errors:   string[]       = []
 
   const now = new Date().toISOString().slice(0, 10)
-  let colorIdx = 0
+  let colorIdx    = 0
+  let skippedCount = 0
+  let blankCount   = 0
 
-  for (let i = 1; i < lines.length; i++) {
-    const lineNum = i + 1
-    const row = splitLine(lines[i], sep)
+  for (let i = 0; i < dataLines.length; i++) {
+    const lineNum = headerIdx + i + 2
+    const rawLine = dataLines[i]
+
+    // Linha em branco → aviso (laranja)
+    if (rawLine.trim() === '') {
+      blankCount++
+      continue
+    }
+
+    const row = splitLine(rawLine, sep)
 
     const nome     = (row[0]  ?? '').trim()
     const catName  = (row[1]  ?? '').trim()
@@ -107,12 +135,13 @@ export function parseCsvImport(
     const anoStr   = (row[5]  ?? '').trim()
     const valorStr = (row[6]  ?? '').trim()
 
-    const lineErrors: string[] = []
+    // Qualquer campo obrigatório vazio → ignorar silenciosamente
+    if (!nome || !catName || !acName || !instName || !mesStr || !anoStr || !valorStr) {
+      skippedCount++
+      continue
+    }
 
-    if (!nome)    lineErrors.push(`campo 'nome' vazio`)
-    if (!catName) lineErrors.push(`campo 'categoria' vazio`)
-    if (!acName)  lineErrors.push(`campo 'classe_ativo' vazio`)
-    if (!instName)lineErrors.push(`campo 'instituicao' vazio`)
+    const lineErrors: string[] = []
 
     const mes = parseInt(mesStr, 10)
     if (isNaN(mes) || mes < 1 || mes > 12) lineErrors.push(`campo 'mes' inválido (${mesStr})`)
@@ -232,10 +261,10 @@ export function parseCsvImport(
   }
 
   if (errors.length > 0) {
-    return { ok: false, errors }
+    return { ok: false, errors, skippedCount, blankCount }
   }
 
-  return { ok: true, result: { products, entries, newCategories, newAssetClasses, newInstitutions, newRegions, newLiquidityOptions } }
+  return { ok: true, result: { products, entries, newCategories, newAssetClasses, newInstitutions, newRegions, newLiquidityOptions, skippedCount, blankCount } }
 }
 
 export function generateCsvTemplate(): string {
