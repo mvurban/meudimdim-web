@@ -36,8 +36,9 @@ export function CategoryGroup({
   const totalIncome       = entries.reduce((s, e) => s + e.income + (dividendByProduct[e.productId] ?? 0), 0)
   const totalContribution = entries.reduce((s, e) => s + e.contribution, 0)
   const totalWithdrawal   = entries.reduce((s, e) => s + e.withdrawal, 0)
-  const avgReturn         = totalBrl > 0
-    ? entries.reduce((s, e) => s + e.returnPct * e.valueBrl, 0) / totalBrl
+  const totalPreviousBrl  = totalBrl - totalIncome - totalContribution + totalWithdrawal
+  const avgReturn         = totalPreviousBrl !== 0
+    ? (totalIncome / Math.abs(totalPreviousBrl)) * 100
     : 0
 
   return (

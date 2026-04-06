@@ -22,8 +22,11 @@ interface ProductRowProps {
 }
 
 export function ProductRow({ entry, product, assetClass, institution, onEdit, onDetail, onDividend, onDelete, onReactivate, onAggregated, dividendTotal }: ProductRowProps) {
-  const effectiveIncome = entry.income + dividendTotal
-  const effectiveReturn = entry.returnPct + (entry.valueBrl > 0 ? dividendTotal / entry.valueBrl * 100 : 0)
+  const effectiveIncome  = entry.income + dividendTotal
+  const valorAnterior    = entry.valueBrl - entry.income - entry.contribution + entry.withdrawal
+  const effectiveReturn  = valorAnterior !== 0
+    ? (effectiveIncome / Math.abs(valorAnterior)) * 100
+    : 0
   const isClosed = entry.isClosed ?? false
   return (
     <tr style={isClosed ? { opacity: 0.45 } : undefined}>

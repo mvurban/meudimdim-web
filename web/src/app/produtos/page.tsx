@@ -197,8 +197,9 @@ export default function ProdutosPage() {
   const totalIncome       = filteredEntries.reduce((s, e) => s + e.income, 0)
   const totalContribution = filteredEntries.reduce((s, e) => s + e.contribution, 0)
   const totalWithdrawal   = filteredEntries.reduce((s, e) => s + e.withdrawal, 0)
-  const avgReturn         = totalBrl > 0
-    ? filteredEntries.reduce((s, e) => s + e.returnPct * e.valueBrl, 0) / totalBrl
+  const totalPreviousBrl  = totalBrl - totalIncome - totalContribution + totalWithdrawal
+  const avgReturn         = totalPreviousBrl !== 0
+    ? (totalIncome / Math.abs(totalPreviousBrl)) * 100
     : 0
   const exchangeRate      = filteredEntries[0]?.exchangeRate ?? 0
 
